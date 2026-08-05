@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="package" method="upgrade">
+    <name>pkg_ra_events</name>
+    <packagename>ra_events</packagename>
+    <author>Ramblers Tools</author>
+    <creationDate>5 August 2026</creationDate>
+    <copyright>2026 Ramblers Tools</copyright>
+    <license>GNU General Public License version 3 or later; see LICENSE.txt</license>
+    <authorEmail>support@ramblers.tools</authorEmail>
+    <authorUrl>https://ramblers.tools</authorUrl>
+    <version>2.5.1</version>
+    <description>Installs the RA Events component, sidebar module, webservices plugin and batch-processing CLI plugin for Ramblers groups</description>
+    <changelogurl>https://raw.githubusercontent.com/Ramblers-Tools/ra-events/main/changelog.xml</changelogurl>
+    <files folder="packages">
+        <file type="component" id="com_ra_events">com_ra_events.zip</file>
+        <file type="module" id="mod_ra_events" client="site">mod_ra_events.zip</file>
+        <file type="plugin" id="plg_ra_events" group="webservices">plg_ra_events.zip</file>
+        <file type="plugin" id="plg_ra_eventscli" group="console">plg_ra_eventscli.zip</file>
+    </files>
+    <updateservers>
+        <server type="extension" name="RA Events Update Server">https://raw.githubusercontent.com/Ramblers-Tools/ra-events/main/updates/pkg_ra_events.xml</server>
+    </updateservers>
+</extension>

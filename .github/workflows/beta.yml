@@ -1,0 +1,74 @@
+name: Beta pre-release
+
+on:
+  push:
+    branches:
+      - beta
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version from package manifest
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=<version>)[^<]+' pkg_ra_events/pkg_ra_events.xml | head -1)
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building beta for v$VERSION"
+
+      - name: Build extension zips
+        run: |
+          mkdir -p dist/packages
+
+          # com_ra_events
+          cd com_ra_events
+          zip -r ../dist/packages/com_ra_events.zip . -x "*.zip"
+          cd ..
+
+          # mod_ra_events
+          cd mod_ra_events
+          zip -r ../dist/packages/mod_ra_events.zip . -x "*.zip"
+          cd ..
+
+          # plg_ra_events
+          cd plg_ra_events
+          zip -r ../dist/packages/plg_ra_events.zip . -x "*.zip"
+          cd ..
+
+          # plg_ra_eventscli
+          cd plg_ra_eventscli
+          zip -r ../dist/packages/plg_ra_eventscli.zip . -x "*.zip"
+          cd ..
+
+      - name: Build package zip
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          mkdir -p dist/pkg
+
+          cp pkg_ra_events/pkg_ra_events.xml dist/pkg/pkg_ra_events.xml
+
+          mkdir -p dist/pkg/packages
+          cp dist/packages/com_ra_events.zip dist/pkg/packages/
+          cp dist/packages/mod_ra_events.zip dist/pkg/packages/
+          cp dist/packages/plg_ra_events.zip dist/pkg/packages/
+          cp dist/packages/plg_ra_eventscli.zip dist/pkg/packages/
+
+          cd dist/pkg
+          zip -r ../pkg_ra_events-${VERSION}-beta.zip .
+          cd ../..
+
+      - name: Publish pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}-beta
+          name: v${{ steps.version.outputs.VERSION }} (beta)
+          prerelease: true
+          body: |
+            Beta build from the `beta` branch. For testing only — Joomla auto-update will not offer this build to production sites.
+          files: dist/pkg_ra_events-${{ steps.version.outputs.VERSION }}-beta.zip

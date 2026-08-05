@@ -1,1 +1,10 @@
 graphify-out/
+
+# Joomla build artifacts
+nbproject/
+dist/
+*.zip
+
+# macOS
+.DS_Store
+._*
