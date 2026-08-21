@@ -67,7 +67,7 @@ if (count($rows) == 0) {
         $toolsTable->add_item($row->description);
 //        $toolsTable->add_item($row->max_bookings);
 // $bookable, $event_id, $callback, $buttons = true
-        $toolsTable->add_item(BookingHelper::showState($row->state, $row->is_paid, $row->requires_payment));
+        $toolsTable->add_item(BookingHelper::showState($row->state, $row->is_paid, $row->requires_payment, true));
         $toolsTable->generate_line();
     }
     $toolsTable->generate_table();

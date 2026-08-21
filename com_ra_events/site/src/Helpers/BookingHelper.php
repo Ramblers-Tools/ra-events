@@ -1035,20 +1035,27 @@ class BookingHelper {
         }
     }
 
-    public static function showState($state, $is_paid = false, $requires_payment = false) {
+    public static function showState($state, $is_paid = false, $requires_payment = false, $plain = false) {
         if ($state == '') {
             return '';
         }
         if ($state == 0) {
-            return'<p style="color:orange"><b>Status: </b>Provisional</p>';
+            $colour = 'orange';
+            $label = 'Provisional';
         } elseif ($state == 1) {
+            $colour = 'green';
             $label = ($requires_payment && $is_paid) ? 'Confirmed (Paid)' : 'Confirmed';
-            return '<p style="color:green"><b>Status: </b>' . $label . '</p>';
         } elseif ($state == -2) {
-            return '<p style="color:red"><b>Status: </b>Cancelled</p>';
+            $colour = 'red';
+            $label = 'Cancelled';
         } else {
-            return '<p> <b>' . $state . '</b></p>';
+            $colour = '';
+            $label = $state;
         }
+        if ($plain) {
+            return '<span style="color:' . $colour . '"><b>' . $label . '</b></span>';
+        }
+        return '<p style="color:' . $colour . '"><b>Status: </b>' . $label . '</p>';
     }
 
     private function statusDescription($count, $status) {
