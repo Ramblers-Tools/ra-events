@@ -77,6 +77,7 @@ class BookingController extends FormController {
         $menu_id = $this->app->input->getInt('Itemid', '0');
         $event_id = $this->app->input->getInt('event_id', '0');
 
+        $user_id = $this->app->input->getInt('user_id', '0');
         $this->bookingHelper->cancelBooking($id, $user_id);
 
         $target = 'index.php?option=com_ra_events&task=booking.showBookings&event_id=';
@@ -85,18 +86,17 @@ class BookingController extends FormController {
         $this->redirect();
     }
 
-//    public function confirmBooking() {
-//        $id = $this->app->input->getInt('id', '0');
-//        $menu_id = $this->app->input->getInt('Itemid', '0');
-//        $event_id = $this->app->input->getInt('event_id', '0');
-//        $user_id = $this->app->input->getInt('user_id', '0');
-//        $this->bookingHelper->confirmBooking($id, $user_id);
-//
-//        $target = 'index.php?option=com_ra_events&task=booking.showBookings&event_id=';
-//        $target .= $event_id . '&Itemid=' . $menu_id;
-//        $this->setRedirect(Route::_($target, false));
-//        $this->redirect();
-//    }
+    public function confirmBooking() {
+        $id = $this->app->input->getInt('id', '0');
+        $menu_id = $this->app->input->getInt('Itemid', '0');
+        $event_id = $this->app->input->getInt('event_id', '0');
+        $this->bookingHelper->confirmBooking($id);
+
+        $target = 'index.php?option=com_ra_events&task=booking.showBookings&event_id=';
+        $target .= $event_id . '&Itemid=' . $menu_id;
+        $this->setRedirect(Route::_($target, false));
+        $this->redirect();
+    }
 
     public function createBooking() {
 // invoked from tmpl/event/book
@@ -465,13 +465,21 @@ class BookingController extends FormController {
             if ($canEdit) {
                 $target = $target_edit . '&event_id=' . $row->event_id . '&user_id=' . $row->user_id;
                 $target .= '&id=' . $row->id;
-                $actions = $this->toolsHelper->buildButton($target, 'Edit', False, 'sunset');
+                $actions = $this->toolsHelper->buildButton($target, 'Edit Booking', False, 'sunset');
                 $target = $target_resend . '&event_id=' . $row->event_id . '&menu_id=' . $row->user_id;
                 $target .= '&id=' . $row->id;
                 if ($row->state == 0) {
                     $actions .= $this->toolsHelper->buildButton($target, 'Resend acknowledgement', False, 'lightgreen');
+                    $confirm_target = 'index.php?option=com_ra_events&task=booking.confirmBooking&event_id=' . $row->event_id;
+                    $confirm_target .= '&Itemid=' . $menu_id . '&id=' . $row->id;
+                    $actions .= $this->toolsHelper->buildButton($confirm_target, 'Confirm Booking', False, 'darkgreen');
                 } elseif ($row->state == 1) {
                     $actions .= $this->toolsHelper->buildButton($target, 'Resend confirmation', False, 'sunrise');
+                }
+                if ($row->state == 0 || $row->state == 1) {
+                    $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $row->event_id;
+                    $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
+                    $actions .= $this->toolsHelper->buildButton($cancel_target, 'Cancel Booking', False, 'red');
                 }
                 $table->add_item($actions);
             }
