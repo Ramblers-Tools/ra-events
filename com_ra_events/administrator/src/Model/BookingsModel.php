@@ -132,6 +132,7 @@ class BookingsModel extends ListModel {
 
         // Join over the users for the checked out user
         $query->select("e.title AS event");
+        $query->select("e.requires_payment AS event_requires_payment");
         $query->join("INNER", "#__ra_events AS e ON e.id=a.event_id");
 //        // Join over the user field 'created_by'
         $query->select('`p`.preferred_name');

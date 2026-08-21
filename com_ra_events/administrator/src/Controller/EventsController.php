@@ -169,7 +169,7 @@ class EventsController extends AdminController {
     public function showBookings() {
 
         $event_id = $this->app->input->getInt('id', '0');
-        $sql = 'SELECT event_date, title, state FROM #__ra_events WHERE id=';
+        $sql = 'SELECT event_date, title, state, requires_payment FROM #__ra_events WHERE id=';
         $event = $this->toolsHelper->getItem($sql . $event_id);
         ToolBarHelper::title('Bookings for ' . ' Event ' . $event->event_date . '/' . $event->title);
 
@@ -198,7 +198,7 @@ class EventsController extends AdminController {
 
             $table->add_item($row->preferred_name);
             $table->add_item($row->home_group);
-            $table->add_item(BookingHelper::showState($row->state, $row->is_paid));
+            $table->add_item(BookingHelper::showState($row->state, $row->is_paid, $event->requires_payment));
             $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
             $table->add_item($row->num_places);
             $table->add_item($row->partner);

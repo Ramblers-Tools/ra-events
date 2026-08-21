@@ -117,7 +117,19 @@
             <option value="1">JYES</option>
             <option value="0">JNO</option>
     </field>
-    <field name="max_bookings" 
+    <field
+        name="requires_payment"
+        type="radio"
+        label="Requires payment"
+        description="Does attending this event require payment"
+        class="btn-group btn-group-yesno"
+        default="0"
+        showon="bookable:1"
+        >
+            <option value="1">JYES</option>
+            <option value="0">JNO</option>
+    </field>
+    <field name="max_bookings"
            size="5" 
            maxlength="3" 
            filter="int" type="text" 

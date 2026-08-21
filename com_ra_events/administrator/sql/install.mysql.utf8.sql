@@ -11,6 +11,7 @@
 # 30/03/26 CB ra_recipients and ra_mailshots
 # 17/06/25 CB increase length of booking hints 50 -> 100
 # 21/08/26 RH add is_paid/paid_date/paid_by to ra_bookings
+# 21/08/26 RH add requires_payment to ra_events
 #-------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `#__ra_bookings` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS `#__ra_events` (
     `shareable` INT DEFAULT '0',
     `share_date` DATETIME NULL DEFAULT NULL,
     `bookable`INT DEFAULT '0',
+    `requires_payment` INT DEFAULT '0',
     `max_bookings`INT DEFAULT '20',
     `num_bookings`INT DEFAULT '0',
     `notify_organiser`INT DEFAULT '0',

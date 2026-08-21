@@ -400,7 +400,7 @@ class BookingController extends FormController {
         $print = $this->app->input->getWord('print', 'N');
 // Set up callback so after editing a booking, control passes back to here
         $this->app->setUserState('com_ra_events.event.callback', 'showBookings');
-        $sql = 'SELECT e.id, e.title, e.booking1, e.booking2, e.event_date, c.user_id ';
+        $sql = 'SELECT e.id, e.title, e.booking1, e.booking2, e.event_date, e.requires_payment, c.user_id ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__contact_details AS c ON c.id = e.contact_id ';
         $sql .= 'WHERE e.id=' . $event_id;
@@ -425,6 +425,7 @@ class BookingController extends FormController {
                 }
             }
         }
+        $canManagePayments = Factory::getApplication()->getIdentity()->authorise('manage.payments', 'com_ra_events');
 //        if ($current->user->id !== $this->item->contact_id) {
 //            throw new \Exception('This function only available to the event organiser', 403);
 //        }
@@ -465,7 +466,7 @@ class BookingController extends FormController {
                 $count_places = $count_places + $row->num_places;
             }
 //$table->add_item($row->title);
-            $table->add_item(BookingHelper::showState($row->state, $row->is_paid));
+            $table->add_item(BookingHelper::showState($row->state, $row->is_paid, $item->requires_payment));
             if ($row->preferred_name == '') {
                 $table->add_item('<b>User ' . $row->user_id . '</b>');
                 $message = 'Please check Backend>RA Dashboard>MailMan Reports>Contacts Report for user ' . $row->user_id;
@@ -499,12 +500,14 @@ class BookingController extends FormController {
                     $actions .= $this->toolsHelper->buildButton($confirm_target, 'Confirm Booking', False, 'darkgreen');
                 } elseif ($row->state == 1) {
                     $actions .= $this->toolsHelper->buildButton($target, 'Resend confirmation', False, 'sunrise');
-                    $paid_task = $row->is_paid ? 'markUnpaid' : 'markPaid';
-                    $paid_target = 'index.php?option=com_ra_events&task=booking.' . $paid_task;
-                    $paid_target .= '&event_id=' . $row->event_id . '&Itemid=' . $menu_id . '&id=' . $row->id;
-                    $paid_label = $row->is_paid ? 'Mark as Unpaid' : 'Mark as Paid';
-                    $paid_colour = $row->is_paid ? 'sunset' : 'darkgreen';
-                    $actions .= $this->toolsHelper->buildButton($paid_target, $paid_label, False, $paid_colour);
+                    if ($item->requires_payment && $canManagePayments) {
+                        $paid_task = $row->is_paid ? 'markUnpaid' : 'markPaid';
+                        $paid_target = 'index.php?option=com_ra_events&task=booking.' . $paid_task;
+                        $paid_target .= '&event_id=' . $row->event_id . '&Itemid=' . $menu_id . '&id=' . $row->id;
+                        $paid_label = $row->is_paid ? 'Mark as Unpaid' : 'Mark as Paid';
+                        $paid_colour = $row->is_paid ? 'sunset' : 'darkgreen';
+                        $actions .= $this->toolsHelper->buildButton($paid_target, $paid_label, False, $paid_colour);
+                    }
                 }
                 if ($row->state == 0 || $row->state == 1) {
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $row->event_id;

@@ -93,6 +93,15 @@ class BookingHelper {
         if ($this->current_user_id == 0) {
             throw new \Exception('You must be logged in to mark a booking as paid', 403);
         }
+        if (!Factory::getApplication()->getIdentity()->authorise('manage.payments', 'com_ra_events')) {
+            throw new \Exception('You do not have permission to manage payments', 403);
+        }
+        $sql = 'SELECT e.requires_payment FROM #__ra_bookings AS b ';
+        $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id ';
+        $sql .= 'WHERE b.id=' . (int) $id;
+        if (!$this->toolsHelper->getValue($sql)) {
+            throw new \Exception('This event does not require payment', 403);
+        }
         $date = Factory::getDate('now', Factory::getConfig()->get('offset'))->toSql(true);
         $sql = 'UPDATE #__ra_bookings SET is_paid=1, ';
         $sql .= 'paid_by=' . $this->current_user_id . ', ';
@@ -104,6 +113,9 @@ class BookingHelper {
     public function markUnpaid($id) {
         if ($this->current_user_id == 0) {
             throw new \Exception('You must be logged in to mark a booking as unpaid', 403);
+        }
+        if (!Factory::getApplication()->getIdentity()->authorise('manage.payments', 'com_ra_events')) {
+            throw new \Exception('You do not have permission to manage payments', 403);
         }
         $sql = 'UPDATE #__ra_bookings SET is_paid=0, paid_by=0, paid_date=NULL ';
         $sql .= 'WHERE id=' . $id;
@@ -469,7 +481,7 @@ class BookingHelper {
 
     public function getBookingDetails($booking_id) {
         $sql = 'SELECT b.*, e.id, e.event_date, e.title, e.booking1, e.booking2, ';
-        $sql .= 'e.contact_id, b.num_places, p.preferred_name ';
+        $sql .= 'e.contact_id, e.requires_payment, b.num_places, p.preferred_name ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id ';
         $sql .= 'INNER JOIN #__contact_details AS c ON c.id = e.contact_id ';
@@ -500,7 +512,7 @@ class BookingHelper {
             $details .= '<b>' . $item->booking2 . ':</b> ' . $item->custom2 . '<br>';
         }
 
-        $details .= BookingHelper::showState($item->state, $item->is_paid);
+        $details .= BookingHelper::showState($item->state, $item->is_paid, $item->requires_payment);
 
 // Lookup the contact for the event
         $sql = 'SELECT p.preferred_name FROM `#__ra_profiles` AS p ';
@@ -1023,14 +1035,14 @@ class BookingHelper {
         }
     }
 
-    public static function showState($state, $is_paid = false) {
+    public static function showState($state, $is_paid = false, $requires_payment = false) {
         if ($state == '') {
             return '';
         }
         if ($state == 0) {
             return'<p style="color:orange"><b>Status: </b>Provisional</p>';
         } elseif ($state == 1) {
-            $label = $is_paid ? 'Confirmed (Paid)' : 'Confirmed';
+            $label = ($requires_payment && $is_paid) ? 'Confirmed (Paid)' : 'Confirmed';
             return '<p style="color:green"><b>Status: </b>' . $label . '</p>';
         } elseif ($state == -2) {
             return '<p style="color:red"><b>Status: </b>Cancelled</p>';

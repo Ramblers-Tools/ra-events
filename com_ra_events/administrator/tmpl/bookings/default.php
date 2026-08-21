@@ -88,6 +88,7 @@ $listDirn = $this->state->get('list.direction');
                             $canEdit = $user->authorise('core.edit', 'com_ra_events');
                             $canCheckin = $user->authorise('core.manage', 'com_ra_events');
                             $canChange = $user->authorise('core.edit.state', 'com_ra_events');
+                            $canManagePayments = $user->authorise('manage.payments', 'com_ra_events');
                             ?>
                             <tr class="row<?php echo $i % 2; ?>" data-draggable-group='1' data-transition>
                                 <td class="text-center">
@@ -125,7 +126,7 @@ $listDirn = $this->state->get('list.direction');
                                 </td>
 
                                 <td class="text-center">
-                                    <?php if ($item->state == 1 && $canChange) : ?>
+                                    <?php if ($item->state == 1 && $item->event_requires_payment && $canManagePayments) : ?>
                                         <?php if ($item->is_paid) : ?>
                                             <a href="javascript:void(0);" onclick="document.getElementById('cb<?php echo $i; ?>').checked=true;Joomla.submitbutton('bookings.markUnpaid')" title="Mark as Unpaid">
                                                 <span class="icon-publish text-success" aria-hidden="true"></span> Paid
@@ -135,7 +136,7 @@ $listDirn = $this->state->get('list.direction');
                                                 <span class="icon-unpublish text-danger" aria-hidden="true"></span> Not paid
                                             </a>
                                         <?php endif; ?>
-                                    <?php elseif ($item->state == 1) : ?>
+                                    <?php elseif ($item->state == 1 && $item->event_requires_payment) : ?>
                                         <?php echo $item->is_paid ? 'Paid' : 'Not paid'; ?>
                                     <?php else : ?>
                                         &nbsp;

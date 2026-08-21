@@ -6,6 +6,7 @@
     02/10/25 CB version 2.3.0 - bespoike fields on events/bookings
     27/02/26 CB version 2.4.12 - created with service provider
     21/08/26 RH version 2.6.0 - track paid status on bookings
+    21/08/26 RH version 2.7.0 - restrict paid status to authorised users, per-event opt-in
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -16,7 +17,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.6.0</version>
+    <version>2.7.0</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	
