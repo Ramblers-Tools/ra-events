@@ -42,7 +42,7 @@ echo $toolsHelper->showEvents($this->user->id);
 
 // Find events on which the user has the booked
 $sql = 'SELECT e.id, e.group_code, e.event_time, e.event_date, e.title, e.bookable, ';
-$sql .= 'e.max_bookings, t.description ';
+$sql .= 'e.max_bookings, e.requires_payment, t.description, b.state, b.is_paid ';
 $sql .= 'FROM #__ra_events AS e ';
 $sql .= 'INNER JOIN #__ra_bookings AS b ON b.event_id = e.id ';
 $sql .= 'INNER JOIN #__ra_event_types AS t ON t.id = e.event_type_id ';
@@ -56,7 +56,7 @@ if (count($rows) == 0) {
 } else {
     echo '<h2>Events you have booked on</h2>';
     $toolsTable = new ToolsTable;
-    $toolsTable->add_header('Group,Date,Event,Type,Max');
+    $toolsTable->add_header('Group,Date,Event,Type,Status');
     $rows = $toolsHelper->getRows($sql);
     foreach ($rows as $row) {
         $toolsTable->add_item($row->group_code);
@@ -67,8 +67,7 @@ if (count($rows) == 0) {
         $toolsTable->add_item($row->description);
 //        $toolsTable->add_item($row->max_bookings);
 // $bookable, $event_id, $callback, $buttons = true
-        $bookings = $bookingHelper->showBookings($row->bookable, $row->id, $this->menu_id, '', false);
-        $toolsTable->add_item($bookings);
+        $toolsTable->add_item(BookingHelper::showState($row->state, $row->is_paid, $row->requires_payment));
         $toolsTable->generate_line();
     }
     $toolsTable->generate_table();
