@@ -8,7 +8,7 @@
 		<action name="core.edit" title="JACTION_EDIT" description="JACTION_EDIT" />
 		<action name="core.edit.state" title="JACTION_EDITSTATE" description="JACTION_EDITSTATE" />
 		<action name="core.edit.own" title="JACTION_EDITOWN" description="JACTION_EDITOWN" />
-		<action name="manage.payments" title="COM_RA_EVENTS_ACTION_MANAGEPAYMENTS" description="COM_RA_EVENTS_ACTION_MANAGEPAYMENTS_DESC" />
+		<action name="manage.payments" title="Allow Payment Management" description="Allows marking bookings as paid or unpaid" />
 	</section>
     
 </access>
