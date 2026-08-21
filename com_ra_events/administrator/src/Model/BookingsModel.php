@@ -47,6 +47,7 @@ class BookingsModel extends ListModel {
 //                'created', 'a.created',
                 'modified', 'a.modified',
                 'state', 'a.state',
+                'is_paid', 'a.is_paid',
                 'e.title',
                 'p.preferred_name',
                 'a.num_places',

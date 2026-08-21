@@ -20,6 +20,7 @@ use Joomla\CMS\MVC\Controller\AdminController;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Utilities\ArrayHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
 
 /**
  * Bookings list controller class.
@@ -59,6 +60,30 @@ class BookingsController extends AdminController {
             Factory::getApplication()->enqueueMessage($e->getMessage(), 'warning');
         }
 
+        $this->setRedirect('index.php?option=com_ra_events&view=bookings');
+    }
+
+    public function markPaid() {
+        $this->checkToken();
+        $pks = $this->input->post->get('cid', array(), 'array');
+        ArrayHelper::toInteger($pks);
+        $bookingHelper = new BookingHelper;
+        foreach ($pks as $id) {
+            $bookingHelper->markPaid($id);
+        }
+        $this->setMessage('Booking(s) marked as paid');
+        $this->setRedirect('index.php?option=com_ra_events&view=bookings');
+    }
+
+    public function markUnpaid() {
+        $this->checkToken();
+        $pks = $this->input->post->get('cid', array(), 'array');
+        ArrayHelper::toInteger($pks);
+        $bookingHelper = new BookingHelper;
+        foreach ($pks as $id) {
+            $bookingHelper->markUnpaid($id);
+        }
+        $this->setMessage('Booking(s) marked as unpaid');
         $this->setRedirect('index.php?option=com_ra_events&view=bookings');
     }
 

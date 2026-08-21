@@ -98,6 +98,30 @@ class BookingController extends FormController {
         $this->redirect();
     }
 
+    public function markPaid() {
+        $id = $this->app->input->getInt('id', '0');
+        $menu_id = $this->app->input->getInt('Itemid', '0');
+        $event_id = $this->app->input->getInt('event_id', '0');
+        $this->bookingHelper->markPaid($id);
+
+        $target = 'index.php?option=com_ra_events&task=booking.showBookings&event_id=';
+        $target .= $event_id . '&Itemid=' . $menu_id;
+        $this->setRedirect(Route::_($target, false));
+        $this->redirect();
+    }
+
+    public function markUnpaid() {
+        $id = $this->app->input->getInt('id', '0');
+        $menu_id = $this->app->input->getInt('Itemid', '0');
+        $event_id = $this->app->input->getInt('event_id', '0');
+        $this->bookingHelper->markUnpaid($id);
+
+        $target = 'index.php?option=com_ra_events&task=booking.showBookings&event_id=';
+        $target .= $event_id . '&Itemid=' . $menu_id;
+        $this->setRedirect(Route::_($target, false));
+        $this->redirect();
+    }
+
     public function createBooking() {
 // invoked from tmpl/event/book
         $current_userid = Factory::getApplication()->getSession()->get('user')->id;
@@ -441,7 +465,7 @@ class BookingController extends FormController {
                 $count_places = $count_places + $row->num_places;
             }
 //$table->add_item($row->title);
-            $table->add_item(BookingHelper::showState($row->state));
+            $table->add_item(BookingHelper::showState($row->state, $row->is_paid));
             if ($row->preferred_name == '') {
                 $table->add_item('<b>User ' . $row->user_id . '</b>');
                 $message = 'Please check Backend>RA Dashboard>MailMan Reports>Contacts Report for user ' . $row->user_id;
@@ -475,6 +499,12 @@ class BookingController extends FormController {
                     $actions .= $this->toolsHelper->buildButton($confirm_target, 'Confirm Booking', False, 'darkgreen');
                 } elseif ($row->state == 1) {
                     $actions .= $this->toolsHelper->buildButton($target, 'Resend confirmation', False, 'sunrise');
+                    $paid_task = $row->is_paid ? 'markUnpaid' : 'markPaid';
+                    $paid_target = 'index.php?option=com_ra_events&task=booking.' . $paid_task;
+                    $paid_target .= '&event_id=' . $row->event_id . '&Itemid=' . $menu_id . '&id=' . $row->id;
+                    $paid_label = $row->is_paid ? 'Mark as Unpaid' : 'Mark as Paid';
+                    $paid_colour = $row->is_paid ? 'sunset' : 'darkgreen';
+                    $actions .= $this->toolsHelper->buildButton($paid_target, $paid_label, False, $paid_colour);
                 }
                 if ($row->state == 0 || $row->state == 1) {
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $row->event_id;

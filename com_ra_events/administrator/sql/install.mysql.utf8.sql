@@ -10,6 +10,7 @@
 # 12/02/26 CB delete events/cat_id
 # 30/03/26 CB ra_recipients and ra_mailshots
 # 17/06/25 CB increase length of booking hints 50 -> 100
+# 21/08/26 RH add is_paid/paid_date/paid_by to ra_bookings
 #-------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `#__ra_bookings` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -26,6 +27,9 @@ CREATE TABLE IF NOT EXISTS `#__ra_bookings` (
     `confirmed_by` INT NOT NULL DEFAULT 0,
     `cancelled` DATETIME NULL,
     `cancelled_by` INT NOT NULL DEFAULT 0,
+    `is_paid` TINYINT(1) NOT NULL DEFAULT 0,
+    `paid_date` DATETIME NULL,
+    `paid_by` INT NOT NULL DEFAULT 0,
 PRIMARY KEY (`id`),
 INDEX idx_event_id(event_id),
 INDEX idx_userid(user_id)

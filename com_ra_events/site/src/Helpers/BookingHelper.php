@@ -89,6 +89,27 @@ class BookingHelper {
         $this->toolsHelper->executeCommand($sql);
     }
 
+    public function markPaid($id) {
+        if ($this->current_user_id == 0) {
+            throw new \Exception('You must be logged in to mark a booking as paid', 403);
+        }
+        $date = Factory::getDate('now', Factory::getConfig()->get('offset'))->toSql(true);
+        $sql = 'UPDATE #__ra_bookings SET is_paid=1, ';
+        $sql .= 'paid_by=' . $this->current_user_id . ', ';
+        $sql .= 'paid_date="' . $date . '" ';
+        $sql .= 'WHERE id=' . $id;
+        $this->toolsHelper->executeCommand($sql);
+    }
+
+    public function markUnpaid($id) {
+        if ($this->current_user_id == 0) {
+            throw new \Exception('You must be logged in to mark a booking as unpaid', 403);
+        }
+        $sql = 'UPDATE #__ra_bookings SET is_paid=0, paid_by=0, paid_date=NULL ';
+        $sql .= 'WHERE id=' . $id;
+        $this->toolsHelper->executeCommand($sql);
+    }
+
     public function countActiveBookings($event_id) {
         // get any bookings, confirmed or provisional
         $sql = 'SELECT SUM(b.num_places) AS `tot` ';
@@ -479,7 +500,7 @@ class BookingHelper {
             $details .= '<b>' . $item->booking2 . ':</b> ' . $item->custom2 . '<br>';
         }
 
-        $details .= BookingHelper::showState($item->state);
+        $details .= BookingHelper::showState($item->state, $item->is_paid);
 
 // Lookup the contact for the event
         $sql = 'SELECT p.preferred_name FROM `#__ra_profiles` AS p ';
@@ -1002,14 +1023,15 @@ class BookingHelper {
         }
     }
 
-    public static function showState($state) {
+    public static function showState($state, $is_paid = false) {
         if ($state == '') {
             return '';
         }
         if ($state == 0) {
             return'<p style="color:orange"><b>Status: </b>Provisional</p>';
         } elseif ($state == 1) {
-            return '<p style="color:green"><b>Status: </b>Confirmed</p>';
+            $label = $is_paid ? 'Confirmed (Paid)' : 'Confirmed';
+            return '<p style="color:green"><b>Status: </b>' . $label . '</p>';
         } elseif ($state == -2) {
             return '<p style="color:red"><b>Status: </b>Cancelled</p>';
         } else {

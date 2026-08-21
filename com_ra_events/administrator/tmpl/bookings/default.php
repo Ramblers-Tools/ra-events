@@ -68,6 +68,9 @@ $listDirn = $this->state->get('list.direction');
                             <th  scope="col" class="w-1 text-center">
                                 <?php echo HTMLHelper::_('searchtools.sort', 'JSTATUS', 'a.state', $listDirn, $listOrder); ?>
                             </th>
+                            <th  scope="col" class="w-1 text-center">
+                                <?php echo HTMLHelper::_('searchtools.sort', 'Paid', 'a.is_paid', $listDirn, $listOrder); ?>
+                            </th>
                         </tr>
                     </thead>
                     <tfoot>
@@ -121,6 +124,23 @@ $listDirn = $this->state->get('list.direction');
                                     <?php echo HTMLHelper::_('jgrid.published', $item->state, $i, 'bookings.', $canChange, 'cb'); ?>
                                 </td>
 
+                                <td class="text-center">
+                                    <?php if ($item->state == 1 && $canChange) : ?>
+                                        <?php if ($item->is_paid) : ?>
+                                            <a href="javascript:void(0);" onclick="document.getElementById('cb<?php echo $i; ?>').checked=true;Joomla.submitbutton('bookings.markUnpaid')" title="Mark as Unpaid">
+                                                <span class="icon-publish text-success" aria-hidden="true"></span> Paid
+                                            </a>
+                                        <?php else : ?>
+                                            <a href="javascript:void(0);" onclick="document.getElementById('cb<?php echo $i; ?>').checked=true;Joomla.submitbutton('bookings.markPaid')" title="Mark as Paid">
+                                                <span class="icon-unpublish text-danger" aria-hidden="true"></span> Not paid
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php elseif ($item->state == 1) : ?>
+                                        <?php echo $item->is_paid ? 'Paid' : 'Not paid'; ?>
+                                    <?php else : ?>
+                                        &nbsp;
+                                    <?php endif; ?>
+                                </td>
 
 
 

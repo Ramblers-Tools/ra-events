@@ -402,13 +402,18 @@ class Com_Ra_eventsInstallerScript {
 // If we return false, no message is displayed on the console, just "Custom installation failure"
 //           return false;
         }
-        $this->version_required = '2.5.0';
+        $this->version_required = '2.6.0';
         if (version_compare($this->current_version, $this->version_required, 'ge')) {
             echo 'Current version is ' . $this->current_version . ', no additional processing required</p>';
             return true;
         } else {
             echo '<p>Version is currently ' . $this->current_version . ', ';
             echo 'Requires version >= ' . $this->version_required . '</p>';
+        }
+        if (version_compare($this->current_version, '2.5.1', 'le')) {
+            $this->checkColumn('ra_bookings', 'is_paid', 'A', 'TINYINT(1) NOT NULL DEFAULT "0" AFTER cancelled_by; ');
+            $this->checkColumn('ra_bookings', 'paid_date', 'A', 'DATETIME NULL AFTER is_paid; ');
+            $this->checkColumn('ra_bookings', 'paid_by', 'A', 'INT NOT NULL DEFAULT "0" AFTER paid_date; ');
         }
         if (version_compare($this->current_version, '2.5.0', 'le')) {
             $this->checkColumn('ra_events', 'emails_outstanding', 'A', 'INT DEFAULT "0" AFTER attachment_description; ');

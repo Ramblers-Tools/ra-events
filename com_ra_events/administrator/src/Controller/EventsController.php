@@ -179,7 +179,7 @@ class EventsController extends AdminController {
         $total_places = 0;
         $table->add_header('Name,Group,Status,Booked,Places,Other');
 
-        $sql = 'SELECT b.id, b.event_id, b.state, b.created, b.num_places, b.partner, ';
+        $sql = 'SELECT b.id, b.event_id, b.state, b.is_paid, b.created, b.num_places, b.partner, ';
         $sql .= 'p.preferred_name, p.home_group, s.title ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id  ';
@@ -198,7 +198,7 @@ class EventsController extends AdminController {
 
             $table->add_item($row->preferred_name);
             $table->add_item($row->home_group);
-            $table->add_item(BookingHelper::showState($row->state));
+            $table->add_item(BookingHelper::showState($row->state, $row->is_paid));
             $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
             $table->add_item($row->num_places);
             $table->add_item($row->partner);
