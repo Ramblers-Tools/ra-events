@@ -159,6 +159,7 @@ if ($api_site_id > 0) {
             echo '<div class="span10 form-horizontal">';
             echo '<fieldset class="adminform">';
             echo $this->form->renderField('bookable');
+            echo $this->form->renderField('requires_payment');
             echo $this->form->renderField('max_bookings');
 
             if (is_null($this->item->api_site_id)) {
