@@ -47,6 +47,7 @@ $sql .= 'FROM #__ra_events AS e ';
 $sql .= 'INNER JOIN #__ra_bookings AS b ON b.event_id = e.id ';
 $sql .= 'INNER JOIN #__ra_event_types AS t ON t.id = e.event_type_id ';
 $sql .= 'WHERE b.user_id=' . $this->user->id;
+$sql .= ' AND COALESCE(e.event_date_end, e.event_date) >= CURRENT_DATE';
 $sql .= ' ORDER BY e.event_date DESC';
 //echo "$sql<br>";
 $rows = $toolsHelper->getRows($sql);
@@ -61,7 +62,8 @@ if (count($rows) == 0) {
         $toolsTable->add_item($row->group_code);
         $date = $row->event_time . ' ' . HTMLHelper::_('date', $row->event_date, 'D d/m/y');
         $toolsTable->add_item($date);
-        $toolsTable->add_item($row->title);
+        $event_link = Route::_('index.php?option=com_ra_events&view=event&id=' . $row->id . '&Itemid=' . $this->menu_id);
+        $toolsTable->add_item('<a href="' . $event_link . '">' . $row->title . '</a>');
         $toolsTable->add_item($row->description);
 //        $toolsTable->add_item($row->max_bookings);
 // $bookable, $event_id, $callback, $buttons = true
