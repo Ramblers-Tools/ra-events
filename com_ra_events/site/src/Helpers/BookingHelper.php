@@ -855,9 +855,10 @@ class BookingHelper {
 // User is logged in
 
         $target = 'index.php?option=com_ra_events&Itemid=' . $menu_id;
+        $action_buttons = '';
         if ($tot_bookings > 0) {
             $link = $target . '&task=booking.showBookings&event_id=' . $event_id;
-            $details .= $this->toolsHelper->imageButton('I', $link);
+            $action_buttons .= $this->toolsHelper->buildButton($link, 'Show Bookings', false, 'teal');
         }
 // See if current user is the organiser
 // if so, show link to list members who have booked
@@ -873,12 +874,12 @@ class BookingHelper {
                 $link .= '&task=event.showEmails&id=' . $event_id;
                 $link .= '&Itemid=' . $menu_id;
                 $link .= '&callback=' . $callback;
-                $details .= $this->toolsHelper->buildButton($link, $label, false, 'sunset');
+                $action_buttons .= $this->toolsHelper->buildButton($link, $label, false, 'sunset');
             }
 
             if ($available > 0 && $is_future_event) {
                 $select = $target . '&task=booking.selectUsers&event_id=' . $event_id;
-                $details .= '<a>' . $this->toolsHelper->buildButton($select, 'Select Users') . '</a>';
+                $action_buttons .= $this->toolsHelper->buildButton($select, 'Select Users');
             }
 //            if ($tot_bookings > 0) {
 //                if ($this->item->emails_outstanding > 0){
@@ -895,6 +896,9 @@ class BookingHelper {
 //                $link .= '&task=event.bookingReports&id=' . $event_id;
 //                $details .= $this->toolsHelper->buildButton($link, $label, False, 'darkgreen');
 //            }
+        }
+        if ($action_buttons != '') {
+            $details .= '<div class="ra-event-actions">' . $action_buttons . '</div>';
         }
         $details .= $event->api_site_id;
         $details .= '<br><br>';
