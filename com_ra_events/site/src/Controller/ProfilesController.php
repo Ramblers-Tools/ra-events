@@ -94,15 +94,20 @@ class ProfilesController extends FormController {
         $user_id = $this->app->input->getInt('user_id', '0');
         $menu_id = $this->app->input->getInt('Itemid', '0');
         // Validate input
-        $sql = 'SELECT bookable, contact_id, booking1,booking2 FROM #__ra_events WHERE id=' . $event_id;
+        $sql = 'SELECT bookable, contact_id, booking1, booking2 FROM #__ra_events WHERE id=' . $event_id;
         $item = $this->toolsHelper->getItem($sql);
         if ($item->bookable == 0) {
             throw new \Exception('This event cannot be booked', 403);
         }
+        $is_waitlist = $this->isWaitlistNeeded($event_id);
         if (($item->booking1 == '') AND ($item->booking2 == '')) {
             // No custom fields
-            $booking_id = $this->bookingHelper->createBooking($event_id, $user_id);
-            $this->bookingHelper->confirmBooking($booking_id);
+            if ($is_waitlist) {
+                $this->bookingHelper->createBooking($event_id, $user_id, -1);
+            } else {
+                $booking_id = $this->bookingHelper->createBooking($event_id, $user_id);
+                $this->bookingHelper->confirmBooking($booking_id);
+            }
             // redirect to display form
             $target = 'index.php?option=com_ra_events&view=profiles&event_id=';
             $target .= $event_id . '&Itemid=' . $menu_id;
@@ -115,6 +120,7 @@ class ProfilesController extends FormController {
             $this->app->setUserState('com_ra_events.bookingform.event_id', $event_id);
             $this->app->setUserState('com_ra_events.bookingform.user_id', $user_id);
             $this->app->setUserState('com_ra_events.bookingform.callback', 'profiles');
+            $this->app->setUserState('com_ra_events.bookingform.waitlist', $is_waitlist ? 1 : 0);
             $target = 'index.php?option=com_ra_events&view=bookingform&id=0';
         }
         $this->setRedirect(Route::_($target, false));
@@ -197,6 +203,15 @@ class ProfilesController extends FormController {
         $this->redirect();
     }
 
+    private function isWaitlistNeeded($event_id) {
+        $sql = 'SELECT max_bookings, waiting_list_enabled FROM #__ra_events WHERE id=' . $event_id;
+        $event = $this->toolsHelper->getItem($sql);
+        $sql = 'SELECT SUM(num_places) AS tot FROM #__ra_bookings WHERE event_id=' . $event_id . ' AND state IN (0,1)';
+        $active_places = $this->toolsHelper->getValue($sql);
+        $active_places = is_null($active_places) ? 0 : $active_places;
+        return ($active_places >= $event->max_bookings) && $event->waiting_list_enabled;
+    }
+
     private function multiBookEntry($event_id,$id) {
 //        $this->app->enqueueMessage('id=' . $id, 'info');
         $sql = 'SELECT b.id, b.state, p.preferred_name FROM #__ra_profiles AS p ';
@@ -206,9 +221,14 @@ class ProfilesController extends FormController {
         $item = $this->toolsHelper->getItem($sql);
         if (is_null($item)) {
             $new = $this->bookingHelper->lookupUsername($id);
-            $booking_id = $this->bookingHelper->createBooking($event_id, $id);
-            $this->bookingHelper->confirmBooking($booking_id);
-            $message = $new . ' has been booked';
+            if ($this->isWaitlistNeeded($event_id)) {
+                $this->bookingHelper->createBooking($event_id, $id, -1);
+                $message = $new . ' has been added to the waiting list';
+            } else {
+                $booking_id = $this->bookingHelper->createBooking($event_id, $id);
+                $this->bookingHelper->confirmBooking($booking_id);
+                $message = $new . ' has been booked';
+            }
             $this->app->enqueueMessage($message, 'info');
         } elseif ($item->state == 0) {
 //               $bookingHelper->confirmBooking($item->id);

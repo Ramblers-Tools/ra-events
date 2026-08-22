@@ -63,6 +63,11 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         $sql = 'SELECT * FROM `#__ra_events` WHERE id=' . $this->event_id;
         $this->event = $this->toolsHelper->getItem($sql);
         $this->event_title = $this->event->title;
+        $sql = 'SELECT SUM(num_places) AS tot FROM #__ra_bookings ';
+        $sql .= 'WHERE event_id=' . $this->event_id . ' AND state IN (0,1)';
+        $active_places = $this->toolsHelper->getValue($sql);
+        $active_places = is_null($active_places) ? 0 : $active_places;
+        $this->is_full = ($active_places >= $this->event->max_bookings);
         if ((is_null($this->event->booking1) AND is_null($this->event->booking2)) 
             OR (($this->event->booking1 == '') AND ($this->event->booking2 == ''))) {
             $this->multibook = true;            

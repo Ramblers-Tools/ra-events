@@ -226,6 +226,10 @@ class BookingHelper {
                 $message = 'Confirmed booking created';
                 return $table->id;
             }
+            if ($state == -1) {
+                $message = 'Added to the waiting list';
+                return $table->id;
+            }
             $message = 'Provisional booking created';
 
 // Check if bookings are to be notified to the organiser

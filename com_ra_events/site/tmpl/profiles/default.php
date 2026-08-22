@@ -101,7 +101,11 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
                     $target = 'index.php?option=com_ra_events&task=profiles.';
                     if (is_null($item->state)) {
                         // no subscription record found
-                        $label = 'Book';
+                        if ($this->is_full && $this->event->waiting_list_enabled) {
+                            $label = 'Add to wait list';
+                        } else {
+                            $label = 'Book';
+                        }
                         $action = 'createBooking';
                         $colour = 'sunrise';
                         $check_visible = true;
@@ -122,7 +126,7 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
                     }
 
                     $target .= $action . '&user_id=' . $item->id;
-                    if ($label == 'Book') {
+                    if ($action == 'createBooking') {
                         $organiser_id = 0;
                     } else {
                         $target .= '&id=' . $item->booking_id;
@@ -181,10 +185,10 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
 <div class="controls">
-     <?php if ($this->multibook) : ?>               
+     <?php if ($this->multibook) : ?>
     <button class="btn btn-primary" onclick="Joomla.submitform('profiles.multiBook', document.getElementById('adminForm'));">
         <span class="fas fa-check" aria-hidden="true"></span>
-        <?php echo Text::_('Multi-book'); ?>
+        <?php echo ($this->is_full && $this->event->waiting_list_enabled) ? 'Add selected to wait list' : 'Multi-book'; ?>
     </button>
     <?php endif; ?>
     <a class="btn btn-danger"
