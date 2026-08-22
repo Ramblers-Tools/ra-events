@@ -98,6 +98,39 @@ class BookingController extends FormController {
         $this->redirect();
     }
 
+    public function promoteFromWaitlist() {
+        $id = $this->app->input->getInt('id', '0');
+        $menu_id = $this->app->input->getInt('Itemid', '0');
+        $event_id = $this->app->input->getInt('event_id', '0');
+        $this->bookingHelper->promoteFromWaitlist($id);
+
+        $target = 'index.php?option=com_ra_events&task=booking.showBookings&event_id=';
+        $target .= $event_id . '&Itemid=' . $menu_id;
+        $this->setRedirect(Route::_($target, false));
+        $this->redirect();
+    }
+
+    public function joinWaitlist() {
+        if (Factory::getApplication()->getIdentity()->id == 0) {
+            throw new \Exception('You must be logged on to join the waiting list', 403);
+        }
+        $menu_id = $this->app->input->getInt('Itemid', '0');
+        $event_id = $this->app->input->getInt('event_id', '0');
+        $user_id = $this->app->input->getInt('user_id', '0');
+        $id = $this->lookupBooking($event_id, $user_id);
+
+        $this->app->setUserState('com_ra_events.bookingform.id', $id);
+        $this->app->setUserState('com_ra_events.bookingform.event_id', $event_id);
+        $this->app->setUserState('com_ra_events.bookingform.user_id', $user_id);
+        $this->app->setUserState('com_ra_events.bookingform.callback', '');
+        $this->app->setUserState('com_ra_events.bookingform.waitlist', 1);
+
+        $target = 'index.php?option=com_ra_events&view=bookingform&Itemid=' . $menu_id;
+        $target .= '&event_id=' . $event_id . '&id=' . $id;
+        $this->setRedirect(Route::_($target, false));
+        $this->redirect();
+    }
+
     public function markPaid() {
         $id = $this->app->input->getInt('id', '0');
         $menu_id = $this->app->input->getInt('Itemid', '0');
@@ -453,17 +486,29 @@ class BookingController extends FormController {
         $sql .= 'INNER JOIN #__users AS u ON u.id = b.user_id  ';
         $sql .= 'INNER JOIN #__ra_event_states AS s ON s.id = b.state  ';
         $sql .= 'WHERE b.event_id=' . $event_id;
+        $sql .= ' AND b.state != -1';
         $sql .= ' ORDER BY s.seq, p.preferred_name';
 
         $target_edit = 'index.php?option=com_ra_events&task=booking.makeBooking&Itemid=' . $menu_id;
         $target_edit .= '&callback=showBookings';
         $rows = $this->toolsHelper->getRows($sql);
-        $count_bookings = 0;
-        $count_places = 0;
+        $provisional_bookings = 0;
+        $provisional_places = 0;
+        $confirmed_bookings = 0;
+        $confirmed_places = 0;
+        $paid_bookings = 0;
+        $paid_places = 0;
         foreach ($rows as $row) {
-            if ($row->state == 1) {
-                $count_bookings++;
-                $count_places = $count_places + $row->num_places;
+            if ($row->state == 0) {
+                $provisional_bookings++;
+                $provisional_places = $provisional_places + $row->num_places;
+            } elseif ($row->state == 1) {
+                $confirmed_bookings++;
+                $confirmed_places = $confirmed_places + $row->num_places;
+                if ($item->requires_payment && $row->is_paid) {
+                    $paid_bookings++;
+                    $paid_places = $paid_places + $row->num_places;
+                }
             }
 //$table->add_item($row->title);
             $table->add_item(BookingHelper::showState($row->state, $row->is_paid, $item->requires_payment));
@@ -509,7 +554,7 @@ class BookingController extends FormController {
                         $actions .= $this->toolsHelper->buildButton($paid_target, $paid_label, False, $paid_colour);
                     }
                 }
-                if ($row->state == 0 || $row->state == 1) {
+                if ($row->state == 0 || $row->state == 1 || $row->state == -1) {
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $row->event_id;
                     $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
                     $actions .= $this->toolsHelper->buildButton($cancel_target, 'Cancel Booking', False, 'red');
@@ -519,7 +564,13 @@ class BookingController extends FormController {
             $table->generate_line();
         }
         $table->generate_table();
-        echo $count_bookings . ' confirmed Bookings, ' . $count_places . ' confirmed Places<br>';
+        echo '<div style="display:flex; gap:10px; flex-wrap:wrap;">';
+        echo '<div style="border:1px solid orange; padding:8px 12px;"><b>Provisional</b><br>' . $provisional_bookings . ' bookings, ' . $provisional_places . ' places</div>';
+        echo '<div style="border:1px solid green; padding:8px 12px;"><b>Confirmed</b><br>' . $confirmed_bookings . ' bookings, ' . $confirmed_places . ' places</div>';
+        if ($item->requires_payment) {
+            echo '<div style="border:1px solid teal; padding:8px 12px;"><b>Paid</b><br>' . $paid_bookings . ' bookings, ' . $paid_places . ' places</div>';
+        }
+        echo '</div>';
 // Show any special requests
         $sql = 'SELECT b.special_request, p.preferred_name ';
         $sql .= 'FROM #__ra_bookings as b ';
@@ -543,6 +594,41 @@ class BookingController extends FormController {
             $table->generate_table();
         } else {
             echo 'No special requests<br>';
+        }
+// Show the waiting list
+        $sql = 'SELECT b.id, b.user_id, b.created, b.num_places, p.preferred_name ';
+        $sql .= 'FROM #__ra_bookings AS b ';
+        $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id ';
+        $sql .= 'WHERE b.event_id=' . $event_id;
+        $sql .= ' AND b.state=-1';
+        $sql .= ' ORDER BY b.created';
+        $rows = $this->toolsHelper->getRows($sql);
+        echo '<h4>Waiting List</h4>';
+        if ($rows) {
+            $header = 'Name,Joined,Places';
+            if ($canEdit) {
+                $header .= ',Action';
+            }
+            $table = new ToolsTable;
+            $table->add_header($header);
+            foreach ($rows as $row) {
+                $table->add_item($row->preferred_name);
+                $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
+                $table->add_item($row->num_places);
+                if ($canEdit) {
+                    $promote_target = 'index.php?option=com_ra_events&task=booking.promoteFromWaitlist&event_id=' . $event_id;
+                    $promote_target .= '&Itemid=' . $menu_id . '&id=' . $row->id;
+                    $actions = $this->toolsHelper->buildButton($promote_target, 'Promote to Provisional', False, 'darkgreen');
+                    $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $event_id;
+                    $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
+                    $actions .= $this->toolsHelper->buildButton($cancel_target, 'Cancel Booking', False, 'red');
+                    $table->add_item($actions);
+                }
+                $table->generate_line();
+            }
+            $table->generate_table();
+        } else {
+            echo 'No one on the waiting list<br>';
         }
         // Show summaries of custom fields
         if ($item->booking1 !== '') {

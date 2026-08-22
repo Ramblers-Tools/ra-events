@@ -130,13 +130,25 @@
             <option value="0">JNO</option>
     </field>
     <field name="max_bookings"
-           size="5" 
-           maxlength="3" 
-           filter="int" type="text" 
+           size="5"
+           maxlength="3"
+           filter="int" type="text"
            showon="bookable:1"
-           label="Max Bookings" 
+           label="Max Bookings"
            description="Maximum number of bookings acceptable for the Event"
            />
+    <field
+        name="waiting_list_enabled"
+        type="radio"
+        label="Waiting list"
+        description="If the event is full, allow users to join a waiting list"
+        class="btn-group btn-group-yesno"
+        default="0"
+        showon="bookable:1"
+        >
+            <option value="1">JYES</option>
+            <option value="0">JNO</option>
+    </field>
     <field
         name="notify_organiser"
         type="radio"

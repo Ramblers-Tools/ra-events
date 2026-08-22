@@ -89,6 +89,14 @@ class BookingHelper {
         $this->toolsHelper->executeCommand($sql);
     }
 
+    public function promoteFromWaitlist($id) {
+        if ($this->current_user_id == 0) {
+            throw new \Exception('You must be logged in to promote a booking', 403);
+        }
+        $sql = 'UPDATE #__ra_bookings SET state=0 WHERE id=' . $id;
+        $this->toolsHelper->executeCommand($sql);
+    }
+
     public function markPaid($id) {
         if ($this->current_user_id == 0) {
             throw new \Exception('You must be logged in to mark a booking as paid', 403);
@@ -846,6 +854,13 @@ class BookingHelper {
         $confirmed_places = is_null($confirmed_bookings) ? 0 : $confirmed_bookings;
         $provisional_bookings = $tot_places - $confirmed_places;
 
+        // Active places (confirmed + provisional only - excludes cancelled/waitlisted)
+        $sql = 'SELECT SUM(num_places) AS `tot` FROM #__ra_bookings ';
+        $sql .= 'WHERE event_id=' . $event_id . ' AND state IN (0,1)';
+        $active_places = $this->toolsHelper->getValue($sql);
+        $active_places = is_null($active_places) ? 0 : $active_places;
+        $is_full = ($active_places >= $event->max_bookings);
+
 //        echo $sql . '<br>';
         echo 'Total number of spaces ' . $event->max_bookings . '<br>';
         if (is_null($confirmed_bookings)) {
@@ -974,23 +989,26 @@ class BookingHelper {
                 $details .= $booking->cancelled;
                 $details .= ' by ';
                 $details .= $this->lookupPreferredname($booking->cancelled_by);
+            } elseif ($booking->state == -1) {
+                $details .= 'You are on the waiting list, added on ';
+                $details .= $booking->created;
             }
 
             $details .= '<br>If you have changed your mind, please contact the organiser<br>';
-        } else {
-            if ($available > 0 && $is_future_event) {
-                if (($event->max_bookings - $confirmed_bookings - $provisional_bookings ) < 2) {
-                    $details .= '<br><b>WARNING: <b> If you make a booking,and the existing provisional bookings are accepted, ';
-                    $details .= 'yours may not be possible</b><br>';
-                    $button_label = 'Join the waiting list';
-                } else {
-                    $button_label = 'Make a booking';
-                }
-                $target .= '&task=booking.makeBooking';
-                $target .= '&event_id=' . $event_id;
-                $target .= '&user_id=' . $this->current_user_id;
-                $details .= $this->toolsHelper->buildButton($target, $button_label, False, 'red');
+        } elseif ($is_future_event && !$is_full) {
+            if (($event->max_bookings - $confirmed_bookings - $provisional_bookings ) < 2) {
+                $details .= '<br><b>WARNING: <b> If you make a booking,and the existing provisional bookings are accepted, ';
+                $details .= 'yours may not be possible</b><br>';
             }
+            $target .= '&task=booking.makeBooking';
+            $target .= '&event_id=' . $event_id;
+            $target .= '&user_id=' . $this->current_user_id;
+            $details .= $this->toolsHelper->buildButton($target, 'Make a booking', False, 'red');
+        } elseif ($is_future_event && $is_full && $event->waiting_list_enabled) {
+            $target .= '&task=booking.joinWaitlist';
+            $target .= '&event_id=' . $event_id;
+            $target .= '&user_id=' . $this->current_user_id;
+            $details .= $this->toolsHelper->buildButton($target, 'Add me to waiting list', False, 'red');
         }
 
         return $details;
@@ -1048,6 +1066,9 @@ class BookingHelper {
         } elseif ($state == -2) {
             $colour = 'red';
             $label = 'Cancelled';
+        } elseif ($state == -1) {
+            $colour = 'steelblue';
+            $label = 'Waitlisted';
         } else {
             $colour = '';
             $label = $state;

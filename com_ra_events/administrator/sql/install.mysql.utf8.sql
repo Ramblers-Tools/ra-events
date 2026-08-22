@@ -12,6 +12,7 @@
 # 17/06/25 CB increase length of booking hints 50 -> 100
 # 21/08/26 RH add is_paid/paid_date/paid_by to ra_bookings
 # 21/08/26 RH add requires_payment to ra_events
+# 22/08/26 RH add waiting_list_enabled to ra_events, Waitlisted event state
 #-------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `#__ra_bookings` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -62,6 +63,7 @@ CREATE TABLE IF NOT EXISTS `#__ra_events` (
     `bookable`INT DEFAULT '0',
     `requires_payment` INT DEFAULT '0',
     `max_bookings`INT DEFAULT '20',
+    `waiting_list_enabled` INT DEFAULT '0',
     `num_bookings`INT DEFAULT '0',
     `notify_organiser`INT DEFAULT '0',
     `booking_info` TEXT DEFAULT NULL,
@@ -97,7 +99,8 @@ PRIMARY KEY (`id`)
 INSERT INTO `#__ra_event_states` (seq,id,title) VALUES
 (1,0,'Provisional'),
 (2,1,'Confirmed'),
-(3,-2, 'Cancelled');
+(3,-2, 'Cancelled'),
+(4,-1, 'Waitlisted');
 #-------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `#__ra_event_types`;
 CREATE TABLE IF NOT EXISTS `#__ra_event_types` (

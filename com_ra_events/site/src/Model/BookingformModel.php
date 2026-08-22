@@ -338,10 +338,27 @@ class BookingformModel extends FormModel implements CurrentUserInterface {
         $table = $this->getTable();
         $toolsHelper = new ToolsHelper;
         $bookingHelper = New BookingHelper;
+
+        $waitlist = Factory::getApplication()->getUserState('com_ra_events.bookingform.waitlist', 0);
+        Factory::getApplication()->setUserState('com_ra_events.bookingform.waitlist', 0);
+        if ($waitlist && empty($id)) {
+            // Re-validate at save time - the event may no longer be full if someone else's
+            // booking was cancelled between the button being shown and the form being saved
+            $sql = 'SELECT max_bookings, waiting_list_enabled FROM #__ra_events WHERE id=' . (int) $data['event_id'];
+            $event = $toolsHelper->getItem($sql);
+            $sql = 'SELECT SUM(num_places) AS tot FROM #__ra_bookings ';
+            $sql .= 'WHERE event_id=' . (int) $data['event_id'] . ' AND state IN (0,1)';
+            $active_places = $toolsHelper->getValue($sql);
+            $active_places = is_null($active_places) ? 0 : $active_places;
+            if ($event->waiting_list_enabled && $active_places >= $event->max_bookings) {
+                $data['state'] = -1;
+            }
+        }
+
         if (empty($id)) {
             // creating a new record
             // See if we need to notify the organiser
-            $sql = 'SELECT notify_organiser FROM #__ra_events WHERE id=' . $data['event_id'];         
+            $sql = 'SELECT notify_organiser FROM #__ra_events WHERE id=' . $data['event_id'];
             $notify_organiser = $toolsHelper->getValue($sql);
         } else {
             $table->load($id);
