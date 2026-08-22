@@ -502,7 +502,7 @@ class BookingHelper {
             return 'Booking ' . $booking_id . ' not found';
         }
 
-        $details .= 'You are booked onto this Event, and the details are as follows:<br>';
+        $details .= 'The event details are as follows:<br>';
         $details .= '<div style="padding-left: 19px;">';
         $details .= '<b>Booking reference:</b>: ' . $booking_id . '/' . $item->event_id . '<br>';
         $details .= '<b>Event:</b> ' . $item->title . '<br>';
@@ -792,6 +792,7 @@ class BookingHelper {
         $sql .= 'INNER JOIN #__ra_bookings AS b ON b.user_id=p.id ';
         $sql .= 'INNER JOIN #__ra_event_states AS s ON s.id = b.state ';
         $sql .= 'WHERE b.event_id=' . $item->event_id;
+        $sql .= ' AND b.state != -2';
         $sql .= ' ORDER BY b.created';
         $rows = $this->toolsHelper->getRows($sql);
 
@@ -799,11 +800,14 @@ class BookingHelper {
         $body .= '<tr><th>Date</th><th>Name</th><th>Status</th><th>Places</th><th>Details</th></tr>';
         $provisional = 0;
         $confirmed = 0;
+        $waitlisted = 0;
         foreach ($rows as $row) {
             if ($row->state == 0) {
                 $provisional += $row->num_places;
-            } else {
+            } elseif ($row->state == 1) {
                 $confirmed += $row->num_places;
+            } elseif ($row->state == -1) {
+                $waitlisted += $row->num_places;
             }
             $body .= '<tr>';
             $body .= '<td>' . HTMLHelper::_('date', $row->created, 'd M y H:i') . '</td>';
@@ -830,6 +834,7 @@ class BookingHelper {
         } else {
             $body .= 'Provisional places: ' . $provisional;
         }
+        $body .= '<br>Waitlisted places: ' . $waitlisted;
         echo '<br>';
         //       if ($provisional > 0) {
         //           $body .= 'Logon to confirm these provisional bookings<br>';
