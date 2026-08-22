@@ -99,8 +99,8 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
                     // See if this user is currently booked
                     $check_visible = false;
                     $target = 'index.php?option=com_ra_events&task=profiles.';
-                    if (is_null($item->state)) {
-                        // no subscription record found
+                    if (is_null($item->state) || $item->state == -2) {
+                        // no subscription record found, or a previously cancelled booking - treat as unbooked
                         if ($this->is_full && $this->event->waiting_list_enabled) {
                             $label = 'Add to wait list';
                         } else {
@@ -117,12 +117,6 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
                         $label = 'Cancel';
                         $action = 'cancelBooking';
                         $colour = 'red';
-                    } elseif ($item->state == -2) {
-                        $label = 'Re-instate';
-                        $action = 'confirmBooking';
-                        $colour = 'red';
-                    } elseif ($item->state == '') {
-
                     }
 
                     $target .= $action . '&user_id=' . $item->id;

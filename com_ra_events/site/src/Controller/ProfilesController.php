@@ -219,7 +219,8 @@ class ProfilesController extends FormController {
         $sql .= 'WHERE b.user_id=' . $id;
         $sql .= ' AND b.event_id=' . $event_id;
         $item = $this->toolsHelper->getItem($sql);
-        if (is_null($item)) {
+        if (is_null($item) || $item->state == -2) {
+            // no existing booking, or a previously cancelled one - treat as unbooked
             $new = $this->bookingHelper->lookupUsername($id);
             if ($this->isWaitlistNeeded($event_id)) {
                 $this->bookingHelper->createBooking($event_id, $id, -1);
@@ -231,16 +232,11 @@ class ProfilesController extends FormController {
             }
             $this->app->enqueueMessage($message, 'info');
         } elseif ($item->state == 0) {
-//               $bookingHelper->confirmBooking($item->id);
             $message = $item->preferred_name . ' already has a provisional booking';
             $this->app->enqueueMessage($message, 'info');
         } elseif ($item->state == 1) {
             $message = $item->preferred_name . ' already has confirmed booking';
             $this->app->enqueueMessage($message, 'error');
-        } elseif ($item->state == -2) {
-//                $bookingHelper->confirmBooking($item->id);
-            $message = $item->preferred_name . ' has been cancelled';
-            $this->app->enqueueMessage($message, 'info');
         }
         echo $message . '<br>';
     }    
