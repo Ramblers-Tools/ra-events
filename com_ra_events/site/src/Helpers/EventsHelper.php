@@ -840,9 +840,13 @@ class EventsHelper {
     }
 
     private function updateOutstanding($event_id, $value) {
-        $sql = 'UPDATE #__ra_events SET emails_outstanding=' . (int) $value;
+        $sql = 'UPDATE #__ra_events SET emails_outstanding=' . (int) $value . ' ';
         $sql .= 'WHERE id=' . (int) $event_id;
         return $this->toolsHelper->executeCommand($sql);
+    }
+
+    public function cancelSending($event_id) {
+        return $this->updateOutstanding($event_id, 0);
     }
 
 }

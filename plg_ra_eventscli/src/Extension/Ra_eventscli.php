@@ -16,6 +16,7 @@ namespace Ramblers\Plugin\Console\Ra_eventscli\Extension;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Ramblers\Plugin\Console\Ra_eventscli\Command\EventscopyCommand;
+use Ramblers\Plugin\Console\Ra_eventscli\Command\SendemailsCommand;
 
 class Ra_eventscli extends CMSPlugin {
 
@@ -42,6 +43,9 @@ class Ra_eventscli extends CMSPlugin {
     public function registerCLICommands() {
 
         $commandObject = new EventscopyCommand;
+        $this->app->addCommand($commandObject);
+
+        $commandObject = new SendemailsCommand;
         $this->app->addCommand($commandObject);
     }
 

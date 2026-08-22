@@ -370,8 +370,16 @@ class EventController extends BaseController {
         $mailshot_id = $this->app->input->getInt('mailshot_id', '0');
         $eventsHelper = new EventsHelper;
         $eventsHelper->sendEmails($mailshot_id);
-        Factory::getApplication()->enqueueMessage('Message sent', 'info');
+        Factory::getApplication()->enqueueMessage('Message queued for sending', 'info');
         // Redirect to the display screen.
+        $this->setRedirect(Route::_('index.php?option=com_ra_events&view=event&id=' . $event_id, false));
+    }
+
+    public function cancelSending() {
+        $event_id = $this->app->input->getInt('id', '0');
+        $eventsHelper = new EventsHelper;
+        $eventsHelper->cancelSending($event_id);
+        Factory::getApplication()->enqueueMessage('Sending cancelled', 'info');
         $this->setRedirect(Route::_('index.php?option=com_ra_events&view=event&id=' . $event_id, false));
     }
 

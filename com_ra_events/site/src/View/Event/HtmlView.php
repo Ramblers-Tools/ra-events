@@ -167,26 +167,32 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
  //       echo 'view: event id=' . $this->item->id . ' - event type id=' . $this->event_type_id . '<br>';
         $tot_bookings = $this->bookingHelper->countActiveBookings($this->item->id);
 
-        if (($this->item->emails_outstanding == 0) && ($tot_bookings > 1)) {
+        if ($tot_bookings > 1) {
             $target = 'index.php?option=com_ra_events&Itemid=' . $this->menu_id . '&';
-            $sql = 'SELECT id, processing_started, date_sent FROM `#__ra_mail_shots` ';
-            $sql .= 'WHERE event_id=' . (INT) $this->item->id;
-            $sql .= ' ORDER BY id DESC LIMIT 2';
-//            echo $sql . '<br>';
-            $mailshot = $this->toolsHelper->getItem($sql);
-            if (is_null($mailshot) || !is_null($mailshot->processing_started)) {
-                // No mailshot yet, or the last one was already sent
-                $target .= 'view=mailshotform&event_id=' . $this->item->id;
-                $buttons .= $this->toolsHelper->buildButton($target, 'New message', false, 'darkgreen');
+            if ($this->item->emails_outstanding > 0) {
+                // A send is queued or in progress
+                $cancel_target = $target . 'task=event.cancelSending&id=' . $this->item->id;
+                $buttons .= $this->toolsHelper->buildButton($cancel_target, 'Cancel sending', false, 'red');
             } else {
-                // Mailshot exists but has not yet been sent
-                $edit_target = $target . 'view=mailshotform&id=' . $mailshot->id;
-                $edit_target .= '&event_id=' . $this->item->id;
-                $buttons .= $this->toolsHelper->buildButton($edit_target, 'Edit message', false, 'sunrise');
+                $sql = 'SELECT id, processing_started, date_sent FROM `#__ra_mail_shots` ';
+                $sql .= 'WHERE event_id=' . (INT) $this->item->id;
+                $sql .= ' ORDER BY id DESC LIMIT 2';
+//            echo $sql . '<br>';
+                $mailshot = $this->toolsHelper->getItem($sql);
+                if (is_null($mailshot) || !is_null($mailshot->processing_started)) {
+                    // No mailshot yet, or the last one fully completed
+                    $target .= 'view=mailshotform&event_id=' . $this->item->id;
+                    $buttons .= $this->toolsHelper->buildButton($target, 'New message', false, 'darkgreen');
+                } else {
+                    // Mailshot drafted but not yet queued
+                    $edit_target = $target . 'view=mailshotform&id=' . $mailshot->id;
+                    $edit_target .= '&event_id=' . $this->item->id;
+                    $buttons .= $this->toolsHelper->buildButton($edit_target, 'Edit message', false, 'sunrise');
 
-                $send_target = $target . 'task=event.registerEmails&mailshot_id=' . $mailshot->id;
-                $send_target .= '&id=' . $this->item->id;
-                $buttons .= $this->toolsHelper->buildButton($send_target, 'Send message', false, 'red');
+                    $send_target = $target . 'task=event.registerEmails&mailshot_id=' . $mailshot->id;
+                    $send_target .= '&id=' . $this->item->id;
+                    $buttons .= $this->toolsHelper->buildButton($send_target, 'Send message', false, 'red');
+                }
             }
         }
         if ($tot_bookings > 0) {    
