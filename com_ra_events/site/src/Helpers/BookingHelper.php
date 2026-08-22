@@ -139,6 +139,7 @@ class BookingHelper {
         $sql = 'SELECT COUNT(b.id) AS num ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'WHERE b.event_id=' . (INT) $event_id;
+        $sql .= ' AND b.state != -2';
         $total = $this->toolsHelper->getValue($sql);
         if (is_null($total)) {
 //            echo 'No bookings yet';
@@ -151,6 +152,7 @@ class BookingHelper {
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_event_states AS s ON s.id = b.state  ';
         $sql .= 'WHERE b.event_id=' . $event_id;
+        $sql .= ' AND b.state != -2';
         $sql .= ' GROUP BY s.title';
         $sql .= ' ORDER BY s.seq';
 

@@ -421,7 +421,7 @@ class BookingController extends FormController {
         $print = $this->app->input->getWord('print', 'N');
 // Set up callback so after editing a booking, control passes back to here
         $this->app->setUserState('com_ra_events.event.callback', 'showBookings');
-        $sql = 'SELECT e.id, e.title, e.booking1, e.booking2, e.event_date, e.requires_payment, c.user_id ';
+        $sql = 'SELECT e.id, e.title, e.booking1, e.booking2, e.event_date, e.requires_payment, e.max_bookings, c.user_id ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__contact_details AS c ON c.id = e.contact_id ';
         $sql .= 'WHERE e.id=' . $event_id;
@@ -607,7 +607,14 @@ class BookingController extends FormController {
                 if ($canEdit) {
                     $confirm_target = 'index.php?option=com_ra_events&task=booking.confirmBooking&event_id=' . $event_id;
                     $confirm_target .= '&Itemid=' . $menu_id . '&id=' . $row->id;
-                    $actions = $this->toolsHelper->buildButton($confirm_target, 'Confirm Booking', False, 'darkgreen');
+                    if (($confirmed_places + $provisional_places + $row->num_places) > $item->max_bookings) {
+                        $class = ToolsHelper::lookupColourCode('darkgreen', 'B');
+                        $message = 'Confirming this booking will take the event over its maximum allocated spaces. Continue?';
+                        $actions = '<a class="' . $class . '" href="' . $confirm_target . '" ';
+                        $actions .= 'onclick="return confirm(\'' . $message . '\');" target="_self">Confirm Booking</a>';
+                    } else {
+                        $actions = $this->toolsHelper->buildButton($confirm_target, 'Confirm Booking', False, 'darkgreen');
+                    }
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $event_id;
                     $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
                     $actions .= $this->toolsHelper->buildButton($cancel_target, 'Cancel Booking', False, 'red');
