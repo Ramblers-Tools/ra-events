@@ -560,6 +560,7 @@ class BookingController extends FormController {
         if ($item->requires_payment) {
             echo '<div style="border:1px solid teal; padding:8px 12px;"><b>Paid</b><br>' . $paid_bookings . ' bookings, ' . $paid_places . ' places</div>';
         }
+        echo '<div style="border:1px solid grey; padding:8px 12px;"><b>Max Places</b><br>' . $item->max_bookings . '</div>';
         echo '</div>';
 // Show any special requests
         $sql = 'SELECT b.special_request, p.preferred_name ';
