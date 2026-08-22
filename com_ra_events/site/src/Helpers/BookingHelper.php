@@ -89,14 +89,6 @@ class BookingHelper {
         $this->toolsHelper->executeCommand($sql);
     }
 
-    public function promoteFromWaitlist($id) {
-        if ($this->current_user_id == 0) {
-            throw new \Exception('You must be logged in to promote a booking', 403);
-        }
-        $sql = 'UPDATE #__ra_bookings SET state=0 WHERE id=' . $id;
-        $this->toolsHelper->executeCommand($sql);
-    }
-
     public function markPaid($id) {
         if ($this->current_user_id == 0) {
             throw new \Exception('You must be logged in to mark a booking as paid', 403);

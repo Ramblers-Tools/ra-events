@@ -98,18 +98,6 @@ class BookingController extends FormController {
         $this->redirect();
     }
 
-    public function promoteFromWaitlist() {
-        $id = $this->app->input->getInt('id', '0');
-        $menu_id = $this->app->input->getInt('Itemid', '0');
-        $event_id = $this->app->input->getInt('event_id', '0');
-        $this->bookingHelper->promoteFromWaitlist($id);
-
-        $target = 'index.php?option=com_ra_events&task=booking.showBookings&event_id=';
-        $target .= $event_id . '&Itemid=' . $menu_id;
-        $this->setRedirect(Route::_($target, false));
-        $this->redirect();
-    }
-
     public function joinWaitlist() {
         if (Factory::getApplication()->getIdentity()->id == 0) {
             throw new \Exception('You must be logged on to join the waiting list', 403);
@@ -616,9 +604,9 @@ class BookingController extends FormController {
                 $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
                 $table->add_item($row->num_places);
                 if ($canEdit) {
-                    $promote_target = 'index.php?option=com_ra_events&task=booking.promoteFromWaitlist&event_id=' . $event_id;
-                    $promote_target .= '&Itemid=' . $menu_id . '&id=' . $row->id;
-                    $actions = $this->toolsHelper->buildButton($promote_target, 'Promote to Provisional', False, 'darkgreen');
+                    $confirm_target = 'index.php?option=com_ra_events&task=booking.confirmBooking&event_id=' . $event_id;
+                    $confirm_target .= '&Itemid=' . $menu_id . '&id=' . $row->id;
+                    $actions = $this->toolsHelper->buildButton($confirm_target, 'Confirm Booking', False, 'darkgreen');
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $event_id;
                     $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
                     $actions .= $this->toolsHelper->buildButton($cancel_target, 'Cancel Booking', False, 'red');
