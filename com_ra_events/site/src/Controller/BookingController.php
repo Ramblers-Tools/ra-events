@@ -169,6 +169,7 @@ class BookingController extends FormController {
     private function lookupBooking($event_id, $user_id) {
         $sql = 'SELECT id FROM #__ra_bookings WHERE event_id=' . $event_id;
         $sql .= ' AND user_id=' . $user_id;
+        $sql .= ' AND state != -2';
         $id = $this->toolsHelper->getValue($sql);
         if (is_null($id)) {
             return 0;
