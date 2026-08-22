@@ -366,13 +366,11 @@ class EventController extends BaseController {
     }
 
     public function registerEmails() {
-        // count the number of attendees
         $event_id = $this->app->input->getInt('id', '0');
         $mailshot_id = $this->app->input->getInt('mailshot_id', '0');
         $eventsHelper = new EventsHelper;
-        $attendee_count = $eventsHelper->countAttendees($event_id);
-        echo 'Attendees for event id ' . $event_id . ': ' . $attendee_count . '<br>';
-//        $eventsHelper->updateOutstanding($mailshot_id, $attendee_count);
+        $eventsHelper->sendEmails($mailshot_id);
+        Factory::getApplication()->enqueueMessage('Message sent', 'info');
         // Redirect to the display screen.
         $this->setRedirect(Route::_('index.php?option=com_ra_events&view=event&id=' . $event_id, false));
     }

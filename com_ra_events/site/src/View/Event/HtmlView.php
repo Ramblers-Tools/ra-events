@@ -174,35 +174,20 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
             $sql .= ' ORDER BY id DESC LIMIT 2';
 //            echo $sql . '<br>';
             $mailshot = $this->toolsHelper->getItem($sql);
-            if (is_null($mailshot)) {
-                // No mailshot
-                $caption = 'New message';
-                $colour = 'darkgreen';
-                $target .= 'view=mailshotform';
+            if (is_null($mailshot) || !is_null($mailshot->processing_started)) {
+                // No mailshot yet, or the last one was already sent
+                $target .= 'view=mailshotform&event_id=' . $this->item->id;
+                $buttons .= $this->toolsHelper->buildButton($target, 'New message', false, 'darkgreen');
             } else {
-                // Mailshot exists
-                if (is_null($mailshot->processing_started)) {
-                // mailshot exists but not yet sent
-                    $caption = 'Edit message';
-                    $colour = 'sunrise';
-                    $target .= 'view=mailshotform&id=' . $mailshot->id;
-                    $target .= '&event_id=' .$this->item->id;
-                    echo $target . '<br>';
-                    $buttons .= $this->toolsHelper->buildButton($target,$caption,false,$colour);
+                // Mailshot exists but has not yet been sent
+                $edit_target = $target . 'view=mailshotform&id=' . $mailshot->id;
+                $edit_target .= '&event_id=' . $this->item->id;
+                $buttons .= $this->toolsHelper->buildButton($edit_target, 'Edit message', false, 'sunrise');
 
-                    $caption = 'Send message';
-                    $colour = 'red';
-                    $target .= 'task=event.registerEmails&mailshot_id=' . $mailshot->id;
-                } else {
-                // Last mailshot was sent successfully
-                    $caption = 'New message';
-                    $colour = 'darkgreen';
-                    $target .= 'view=mailshotform';
-                }
-            }        
-
-            $target .= '&event_id=' .$this->item->id;
-            $buttons .= $this->toolsHelper->buildButton($target,$caption,false,$colour);
+                $send_target = $target . 'task=event.registerEmails&mailshot_id=' . $mailshot->id;
+                $send_target .= '&id=' . $this->item->id;
+                $buttons .= $this->toolsHelper->buildButton($send_target, 'Send message', false, 'red');
+            }
         }
         if ($tot_bookings > 0) {    
             $caption = 'Show Reports';
