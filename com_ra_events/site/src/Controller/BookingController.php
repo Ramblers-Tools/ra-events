@@ -475,6 +475,7 @@ class BookingController extends FormController {
         $sql .= 'INNER JOIN #__ra_event_states AS s ON s.id = b.state  ';
         $sql .= 'WHERE b.event_id=' . $event_id;
         $sql .= ' AND b.state != -1';
+        $sql .= ' AND b.state != -2';
         $sql .= ' ORDER BY s.seq, p.preferred_name';
 
         $target_edit = 'index.php?option=com_ra_events&task=booking.makeBooking&Itemid=' . $menu_id;
