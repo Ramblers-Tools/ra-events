@@ -925,7 +925,7 @@ class BookingHelper {
                 $action_buttons .= $this->toolsHelper->buildButton($link, $label, false, 'sunset');
             }
 
-            if ($available > 0 && $is_future_event) {
+            if ($is_future_event) {
                 $select = $target . '&task=booking.selectUsers&event_id=' . $event_id;
                 $action_buttons .= $this->toolsHelper->buildButton($select, 'Select Users');
             }
