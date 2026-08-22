@@ -73,6 +73,7 @@ class BookingHelper {
         $sql .= 'cancelled="' . $date . '" ';
         $sql .= 'WHERE id=' . $id;
         $this->toolsHelper->executeCommand($sql);
+        $this->sendTransitionEmail($id, 'cancelled');
     }
 
     public function confirmBooking($id) {
@@ -87,6 +88,7 @@ class BookingHelper {
         $sql .= 'WHERE id=' . $id;
 //        echo $sql;
         $this->toolsHelper->executeCommand($sql);
+        $this->sendTransitionEmail($id, 'confirmed');
     }
 
     public function markPaid($id) {
@@ -108,6 +110,7 @@ class BookingHelper {
         $sql .= 'paid_date="' . $date . '" ';
         $sql .= 'WHERE id=' . $id;
         $this->toolsHelper->executeCommand($sql);
+        $this->sendTransitionEmail($id, 'paid');
     }
 
     public function markUnpaid($id) {
@@ -222,6 +225,7 @@ class BookingHelper {
             }
             if ($state == -1) {
                 $message = 'Added to the waiting list';
+                $this->sendTransitionEmail($table->id, 'waitlisted');
                 return $table->id;
             }
             $message = 'Provisional booking created';
@@ -663,6 +667,50 @@ class BookingHelper {
         return $length . $value;
     }
 
+    private function sendTransitionEmail($booking_id, $kind) {
+        $sql = 'SELECT b.event_id, e.title, p.preferred_name, u.email ';
+        $sql .= 'FROM #__ra_bookings AS b ';
+        $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id ';
+        $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id ';
+        $sql .= 'INNER JOIN #__users AS u ON u.id = b.user_id ';
+        $sql .= 'WHERE b.id=' . (int) $booking_id;
+        $item = $this->toolsHelper->getItem($sql);
+        if (is_null($item)) {
+            return false;
+        }
+        switch ($kind) {
+            case 'confirmed':
+                $record_type = '5';
+                $subject = 'Your booking for ' . $item->title . ' has been confirmed';
+                $intro = 'Your place has been confirmed.';
+                break;
+            case 'paid':
+                $record_type = '6';
+                $subject = 'Thank you for your payment for ' . $item->title;
+                $intro = 'Thank you - your payment has been received.';
+                break;
+            case 'cancelled':
+                $record_type = '7';
+                $subject = 'Your booking for ' . $item->title . ' has been cancelled';
+                $intro = 'Your booking has been cancelled.';
+                break;
+            case 'waitlisted':
+                $record_type = '8';
+                $subject = 'You have been added to the waiting list for ' . $item->title;
+                $intro = 'You have been added to the waiting list for this event.';
+                break;
+            default:
+                return false;
+        }
+        $eventHelper = new EventsHelper;
+        $body = $eventHelper->emailHeader($item->event_id, $record_type);
+        $body .= 'Dear ' . $item->preferred_name . ',<br>';
+        $body .= $intro . '<br>';
+        $body .= $this->getBookingDetails($booking_id);
+        $this->toolsHelper->sendEmail($item->email, $item->email, $subject, $body);
+        return true;
+    }
+
     public function sendAcknowledgement($booking_id, $mode) {
         // Always sends acknowledgement to the booker
         // If mode =2, also notifies the organiser
@@ -696,10 +744,17 @@ class BookingHelper {
         }
 //       var_dump($new_booker);
 //       die;
-        $title = 'Your booking for ' . $item->title;
-
-        $body = $eventHelper->emailHeader($item->event_id, '2');
-        $body .= 'Dear ' . $new_booker->preferred_name . ',<br>';
+        if ($item->state == -1) {
+            $title = 'You have been added to the waiting list for ' . $item->title;
+            $body = $eventHelper->emailHeader($item->event_id, '8');
+            $body .= 'Dear ' . $new_booker->preferred_name . ',<br>';
+            $body .= 'You have been added to the waiting list for this event.<br>';
+        } else {
+            $title = 'Your provisional booking for ' . $item->title;
+            $body = $eventHelper->emailHeader($item->event_id, '2');
+            $body .= 'Dear ' . $new_booker->preferred_name . ',<br>';
+            $body .= 'Thank you for your booking - it is currently provisional and will be confirmed by the organiser.<br>';
+        }
         $body .= $this->getBookingDetails($booking_id);
 
         // send the email

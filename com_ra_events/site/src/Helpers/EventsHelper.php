@@ -169,6 +169,14 @@ class EventsHelper {
             $header_text .= 'New booking:';
         } elseif ($record_type == '4') {
             $header_text .= 'Message to everyone booked onto: ';
+        } elseif ($record_type == '5') {
+            $header_text .= 'Booking Confirmed: ';
+        } elseif ($record_type == '6') {
+            $header_text .= 'Payment Received: ';
+        } elseif ($record_type == '7') {
+            $header_text .= 'Booking Cancelled: ';
+        } elseif ($record_type == '8') {
+            $header_text .= 'Waiting List: ';
         } else {
             $header_text .= 'Message of type: ' . $record_type;
         }
