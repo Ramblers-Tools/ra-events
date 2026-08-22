@@ -1011,6 +1011,8 @@ class BookingHelper {
         $sql .= 'INNER JOIN #__ra_event_states AS s ON s.id = b.state  ';
         $sql .= 'WHERE b.event_id=' . $event_id;
         $sql .= ' AND b.user_id=' . $this->current_user_id;
+        $sql .= ' AND b.state != -2';
+        $sql .= ' ORDER BY b.created DESC';
 //        echo $sql;
         $booking = $this->toolsHelper->getItem($sql);
 
