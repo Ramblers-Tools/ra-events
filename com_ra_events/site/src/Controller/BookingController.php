@@ -539,7 +539,7 @@ class BookingController extends FormController {
                         $paid_task = $row->is_paid ? 'markUnpaid' : 'markPaid';
                         $paid_target = 'index.php?option=com_ra_events&task=booking.' . $paid_task;
                         $paid_target .= '&event_id=' . $row->event_id . '&Itemid=' . $menu_id . '&id=' . $row->id;
-                        $paid_icon = $row->is_paid ? 'icon-unpublish' : 'icon-publish';
+                        $paid_icon = 'icon-cart';
                         $paid_label = $row->is_paid ? 'Mark as unpaid' : 'Mark as paid';
                         $paid_colour = $row->is_paid ? 'ra-orange' : 'ra-green';
                         $actions .= $this->iconButton($paid_target, $paid_icon, $paid_label, $paid_colour);
