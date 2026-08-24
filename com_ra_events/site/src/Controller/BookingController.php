@@ -541,7 +541,7 @@ class BookingController extends FormController {
                         $paid_target .= '&event_id=' . $row->event_id . '&Itemid=' . $menu_id . '&id=' . $row->id;
                         $paid_icon = 'icon-cart';
                         $paid_label = $row->is_paid ? 'Mark as unpaid' : 'Mark as paid';
-                        $paid_colour = $row->is_paid ? 'ra-orange' : 'ra-green';
+                        $paid_colour = $row->is_paid ? 'ra-orange ra-strike' : 'ra-green';
                         $actions .= $this->iconButton($paid_target, $paid_icon, $paid_label, $paid_colour);
                     }
                 }
