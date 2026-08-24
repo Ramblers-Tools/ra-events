@@ -548,7 +548,7 @@ class BookingController extends FormController {
                 if ($row->state == 0 || $row->state == 1 || $row->state == -1) {
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $row->event_id;
                     $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
-                    $actions .= $this->iconButton($cancel_target, 'icon-trash', 'Cancel booking', 'ra-red');
+                    $actions .= $this->iconButton($cancel_target, 'icon-trash', 'Cancel booking', 'ra-red', 'Are you sure you want to cancel this booking?');
                 }
                 $table->add_item($actions);
             }
@@ -620,7 +620,10 @@ class BookingController extends FormController {
                     }
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $event_id;
                     $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
-                    $actions .= $this->toolsHelper->buildButton($cancel_target, 'Cancel Booking', False, 'red');
+                    $cancel_class = ToolsHelper::lookupColourCode('red', 'B');
+                    $cancel_message = 'Are you sure you want to cancel this booking?';
+                    $actions .= '<a class="' . $cancel_class . '" href="' . $cancel_target . '" ';
+                    $actions .= 'onclick="return confirm(\'' . $cancel_message . '\');" target="_self">Cancel Booking</a>';
                     $table->add_item($actions);
                 }
                 $table->generate_line();
@@ -644,11 +647,14 @@ class BookingController extends FormController {
         echo $this->toolsHelper->backButton($back);
     }
 
-    private function iconButton($url, $icon, $title, $colour) {
+    private function iconButton($url, $icon, $title, $colour, $confirmMessage = '') {
         $q = chr(34);
         $out = '<a class=' . $q . 'ra-icon-btn ' . $colour . $q;
         $out .= ' href=' . $q . $url . $q;
         $out .= ' title=' . $q . $title . $q;
+        if ($confirmMessage !== '') {
+            $out .= ' onclick=' . $q . 'return confirm(' . "'" . $confirmMessage . "'" . ');' . $q;
+        }
         $out .= ' target=' . $q . '_self' . $q . '>';
         $out .= '<span class="' . $icon . '" aria-hidden="true"></span></a>';
         return $out;
