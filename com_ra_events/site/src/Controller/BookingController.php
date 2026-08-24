@@ -620,10 +620,7 @@ class BookingController extends FormController {
                     }
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $event_id;
                     $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
-                    $cancel_class = ToolsHelper::lookupColourCode('red', 'B');
-                    $cancel_message = 'Are you sure you want to cancel this booking?';
-                    $actions .= '<a class="' . $cancel_class . '" href="' . $cancel_target . '" ';
-                    $actions .= 'onclick="return confirm(\'' . $cancel_message . '\');" target="_self">Cancel Booking</a>';
+                    $actions .= $this->iconButton($cancel_target, 'icon-trash', 'Cancel booking', 'ra-red', 'Are you sure you want to cancel this booking?');
                     $table->add_item($actions);
                 }
                 $table->generate_line();
