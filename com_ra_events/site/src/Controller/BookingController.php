@@ -525,42 +525,43 @@ class BookingController extends FormController {
             if ($canEdit) {
                 $target = $target_edit . '&event_id=' . $row->event_id . '&user_id=' . $row->user_id;
                 $target .= '&id=' . $row->id;
-                $actions = $this->toolsHelper->buildButton($target, 'Edit Booking', False, 'sunset');
+                $actions = $this->iconButton($target, 'icon-pencil-2', 'Edit booking', 'ra-dark');
                 $target = $target_resend . '&event_id=' . $row->event_id . '&menu_id=' . $row->user_id;
                 $target .= '&id=' . $row->id;
                 if ($row->state == 0) {
-                    $actions .= $this->toolsHelper->buildButton($target, 'Resend acknowledgement', False, 'lightgreen');
+                    $actions .= $this->iconButton($target, 'icon-envelope', 'Resend acknowledgement', 'ra-orange');
                     $confirm_target = 'index.php?option=com_ra_events&task=booking.confirmBooking&event_id=' . $row->event_id;
                     $confirm_target .= '&Itemid=' . $menu_id . '&id=' . $row->id;
-                    $actions .= $this->toolsHelper->buildButton($confirm_target, 'Confirm Booking', False, 'darkgreen');
+                    $actions .= $this->iconButton($confirm_target, 'icon-ok', 'Confirm booking', 'ra-green');
                 } elseif ($row->state == 1) {
-                    $actions .= $this->toolsHelper->buildButton($target, 'Resend confirmation', False, 'sunrise');
+                    $actions .= $this->iconButton($target, 'icon-envelope', 'Resend confirmation', 'ra-orange');
                     if ($item->requires_payment && $canManagePayments) {
                         $paid_task = $row->is_paid ? 'markUnpaid' : 'markPaid';
                         $paid_target = 'index.php?option=com_ra_events&task=booking.' . $paid_task;
                         $paid_target .= '&event_id=' . $row->event_id . '&Itemid=' . $menu_id . '&id=' . $row->id;
-                        $paid_label = $row->is_paid ? 'Mark as Unpaid' : 'Mark as Paid';
-                        $paid_colour = $row->is_paid ? 'sunset' : 'darkgreen';
-                        $actions .= $this->toolsHelper->buildButton($paid_target, $paid_label, False, $paid_colour);
+                        $paid_icon = $row->is_paid ? 'icon-unpublish' : 'icon-publish';
+                        $paid_label = $row->is_paid ? 'Mark as unpaid' : 'Mark as paid';
+                        $paid_colour = $row->is_paid ? 'ra-orange' : 'ra-green';
+                        $actions .= $this->iconButton($paid_target, $paid_icon, $paid_label, $paid_colour);
                     }
                 }
                 if ($row->state == 0 || $row->state == 1 || $row->state == -1) {
                     $cancel_target = 'index.php?option=com_ra_events&task=booking.cancelBooking&event_id=' . $row->event_id;
                     $cancel_target .= '&Itemid=' . $menu_id . '&id=' . $row->id . '&user_id=' . $row->user_id;
-                    $actions .= $this->toolsHelper->buildButton($cancel_target, 'Cancel Booking', False, 'red');
+                    $actions .= $this->iconButton($cancel_target, 'icon-trash', 'Cancel booking', 'ra-red');
                 }
                 $table->add_item($actions);
             }
             $table->generate_line();
         }
         $table->generate_table();
-        echo '<div style="display:flex; gap:10px; flex-wrap:wrap;">';
-        echo '<div style="border:1px solid orange; padding:8px 12px;"><b>Provisional</b><br>' . $provisional_bookings . ' bookings, ' . $provisional_places . ' places</div>';
-        echo '<div style="border:1px solid green; padding:8px 12px;"><b>Confirmed</b><br>' . $confirmed_bookings . ' bookings, ' . $confirmed_places . ' places</div>';
+        echo '<div class="ra-stat-tiles">';
+        echo $this->statTile('icon-calendar', 'Provisional', $provisional_bookings . ' bookings, ' . $provisional_places . ' places', 'ra-orange');
+        echo $this->statTile('icon-users', 'Confirmed', $confirmed_bookings . ' bookings, ' . $confirmed_places . ' places', 'ra-green');
         if ($item->requires_payment) {
-            echo '<div style="border:1px solid teal; padding:8px 12px;"><b>Paid</b><br>' . $paid_bookings . ' bookings, ' . $paid_places . ' places</div>';
+            echo $this->statTile('icon-cart', 'Paid', $paid_bookings . ' bookings, ' . $paid_places . ' places', 'ra-teal');
         }
-        echo '<div style="border:1px solid grey; padding:8px 12px;"><b>Max Places</b><br>' . $item->max_bookings . '</div>';
+        echo $this->statTile('icon-user', 'Max Places', $item->max_bookings, 'ra-grey');
         echo '</div>';
 // Show any special requests
         $sql = 'SELECT b.special_request, p.preferred_name ';
@@ -641,6 +642,24 @@ class BookingController extends FormController {
         $back = 'index.php?option=com_ra_events&view=event&id=' . $event_id;
         $back .= '&Itemid=' . $menu_id;
         echo $this->toolsHelper->backButton($back);
+    }
+
+    private function iconButton($url, $icon, $title, $colour) {
+        $q = chr(34);
+        $out = '<a class=' . $q . 'ra-icon-btn ' . $colour . $q;
+        $out .= ' href=' . $q . $url . $q;
+        $out .= ' title=' . $q . $title . $q;
+        $out .= ' target=' . $q . '_self' . $q . '>';
+        $out .= '<span class="' . $icon . '" aria-hidden="true"></span></a>';
+        return $out;
+    }
+
+    private function statTile($icon, $title, $body, $colour) {
+        $out = '<div class="ra-stat-tile ' . $colour . '">';
+        $out .= '<span class="ra-stat-icon ' . $icon . '" aria-hidden="true"></span>';
+        $out .= '<span><span class="ra-stat-title">' . $title . '</span>' . $body . '</span>';
+        $out .= '</div>';
+        return $out;
     }
 
     private function showSummary($id, $num, $field) {
