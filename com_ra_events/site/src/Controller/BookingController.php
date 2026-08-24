@@ -455,7 +455,7 @@ class BookingController extends FormController {
         $target_resend = 'index.php?option=com_ra_events&task=booking.resendConfirmation&id=';
 
         $table = new ToolsTable;
-        $header = 'Status, Name, Places, Other ';
+        $header = 'Status, Name, Places, Guest ';
         if ($item->booking1 !== '') {
             $header .= ',' . $item->booking1;
         }
