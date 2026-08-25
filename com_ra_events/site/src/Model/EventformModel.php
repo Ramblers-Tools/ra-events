@@ -254,8 +254,13 @@ class EventformModel extends FormModel implements CurrentUserInterface {
 
             $data['contact_id'] = $ownContact;
             $data['state'] = 0;
-            $data['bookable'] = 1;
             $data['event_type_id'] = $type_id;
+        }
+
+        $time = isset($data['event_time']) ? trim($data['event_time']) : '';
+        if (!preg_match('/^([01][0-9]|2[0-3])[.:][0-5][0-9]$/', $time)) {
+            Factory::getApplication()->enqueueMessage('Time must be entered as HH:MM (e.g. 19:00)', 'error');
+            return false;
         }
 
         if (!$table->bind($data)) {

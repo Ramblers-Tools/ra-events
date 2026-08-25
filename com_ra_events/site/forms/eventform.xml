@@ -32,7 +32,6 @@
                description="Last date of the holiday (YYYY-MM-DD)"
                type="calendar" singleheader="false" todaybutton="false" weeknumbers="false" filltable="true"
                filter="raw" translateformat="false" showtime="false" format="%Y-%m-%d" timeformat="12"
-               showon="event_type_id:4"
                hint="YYYY-MM-DD"/>
         <field name="event_time"
                default="19:00"
@@ -41,7 +40,6 @@
                filter="safehtml"
                type="text"
                required="true"
-               validate="Timefield"
                label="Time"
                description="Time the Event starts"
                hint="HH:MM"/>
@@ -63,19 +61,16 @@
                buttons="true"
                class="inputbox"
                filter="safehtml"
-               label="Agenda"
-               showon="event_type_id:1"
-               description="Agenda for the meeting"/>
+               label="Details"
+               description="Description of the Event (used as the Agenda for Committee meetings)"/>
         <field name="reports" type="editor" buttons="true" class="inputbox" filter="safehtml"
                label="Reports"
-               showon="event_type_id:1"
                description="Reports from the Officers"/>
         <field name="minutes"
                type="editor"
                buttons="true"
                class="inputbox" filter="safehtml"
                label="Minutes"
-               showon="event_type_id:1"
                description="Minutes of the meeting"/>
         <field name="url"
                validate="url"
@@ -114,7 +109,6 @@
             label="Requires payment"
             description="Does attending this event require payment"
             default="0"
-            showon="bookable:1"
             >
                 <option value="1">JYES</option>
                 <option value="0">JNO</option>
@@ -123,8 +117,7 @@
                size="5"
                maxlength="3"
                filter="int" type="text"
-               showon="bookable:1"
-               label="Max Bookings"
+                  label="Max Bookings"
                description="Maximum number of bookings acceptable for the Event"
                />
         <field
@@ -133,7 +126,6 @@
             label="Waiting list"
             description="If the event is full, allow users to join a waiting list"
             default="0"
-            showon="bookable:1"
             >
                 <option value="1">JYES</option>
                 <option value="0">JNO</option>
@@ -143,7 +135,6 @@
             type="radio"
             label="Notify organiser"
             description="If Yes, an email will be sent to the Organiser whenever a booking is made "
-            showon="bookable:1"
             default="0"
             >
                 <option value="1">JYES</option>
@@ -155,30 +146,25 @@
                class="inputbox"
                filter="safehtml"
                label="Booking information"
-               showon="bookable:1"
-               description="Message to be shown when a booking is made, e.g. payment details"/>
+                  description="Message to be shown when a booking is made, e.g. payment details"/>
         <field name="booking1"
                filter="safehtml" type="text"
-               showon="bookable:1"
-               label="Custom 1"
+                  label="Custom 1"
                description="First custom field for Bookings"
                />
         <field name="booking1_hint"
                filter="safehtml" type="text"
-               showon="bookable:1"
-               label="Custom 1 - hint"
+                  label="Custom 1 - hint"
                description="Hint to be shown for first custom field"
                />
         <field name="booking2"
                filter="safehtml" type="text"
-               showon="bookable:1"
-               label="Custom 2"
+                  label="Custom 2"
                description="Second custom field for Bookings"
                />
         <field name="booking2_hint"
                filter="safehtml" type="text"
-               showon="bookable:1"
-               label="Custom 2 - hint"
+                  label="Custom 2 - hint"
                description="Hint to be shown for second custom field"
                />
 
