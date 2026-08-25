@@ -51,13 +51,17 @@ $sql .= ' AND COALESCE(e.event_date_end, e.event_date) >= CURRENT_DATE';
 $sql .= ' ORDER BY e.event_date DESC';
 //echo "$sql<br>";
 $rows = $toolsHelper->getRows($sql);
-if (count($rows) == 0) {
+if ($rows === false) {
+    echo 'Unable to load your bookings at the moment.';
+    if (JDEBUG) {
+        echo '<br>' . $toolsHelper->error;
+    }
+} elseif (count($rows) == 0) {
     echo 'You have not yet made any bookings<br>';
 } else {
     echo '<h2>Events you have booked on</h2>';
     $toolsTable = new ToolsTable;
     $toolsTable->add_header('Group,Date,Event,Type,Status');
-    $rows = $toolsHelper->getRows($sql);
     foreach ($rows as $row) {
         $toolsTable->add_item($row->group_code);
         $date = $row->event_time . ' ' . HTMLHelper::_('date', $row->event_date, 'D d/m/y');
