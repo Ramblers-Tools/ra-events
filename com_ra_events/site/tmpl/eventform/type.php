@@ -29,9 +29,9 @@ $types = $toolsHelper->getRows($sql);
           method="post" class="form-horizontal">
 
         <div class="control-group">
-            <div class="controls">
+            <div class="controls" style="display:flex; flex-direction:column;">
                 <?php foreach ($types as $type): ?>
-                    <label class="radio">
+                    <label class="radio" style="display:block;">
                         <input type="radio" name="event_type_id" value="<?php echo (int) $type->id; ?>" required />
                         <?php echo htmlspecialchars($type->description); ?>
                     </label>

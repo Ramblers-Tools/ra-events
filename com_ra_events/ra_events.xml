@@ -23,6 +23,7 @@
     25/08/26 RH version 2.10.3 - guard My Bookings page against a failed query (surface the real DB error under JDEBUG instead of a fatal count() TypeError)
     25/08/26 RH version 2.10.4 - admin Events list defaults Status filter to "All Events", matching the filter form's own default, so pending-review events aren't hidden on a fresh session
     25/08/26 RH version 2.10.5 - fix fresh-install SQL missing #__ra_bookings.special_request (present via script.php migration but absent from install.mysql.utf8.sql)
+    25/08/26 RH version 2.10.6 - stack event type choices vertically on create-event step 1
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -33,7 +34,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.10.5</version>
+    <version>2.10.6</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	
