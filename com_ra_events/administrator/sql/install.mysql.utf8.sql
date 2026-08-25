@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `#__ra_bookings` (
     `user_id` INT NOT NULL,
     `num_places` INT NOT NULL DEFAULT "1",
     `partner` VARCHAR(50) NULL ,
+    `special_request` VARCHAR(100) NULL ,
     `custom1` varchar(50) NOT NULL DEFAULT "?" ,
     `custom2` varchar(50) NOT NULL DEFAULT "?" ,
     `state` INT DEFAULT 0,
