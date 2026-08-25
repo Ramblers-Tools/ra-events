@@ -16,17 +16,8 @@
         <!-- Set programmatically by EventformModel to the current user's own contact record -->
         <field name="contact_id" type="hidden" filter="int" default="0"/>
 
-        <field name="event_type_id"
-               type="foreignkey"
-               label="Type"
-               description="Type of Event"
-               default=""
-               input_type="list"
-               table="#__ra_event_types"
-               key_field="id"
-               translate="true"
-               value_field="description"
-               required="true"/>
+        <!-- Chosen in step 1 (Eventform layout=type), then fixed for the life of the event -->
+        <field name="event_type_id" type="hidden" filter="int" default="0"/>
         <field name="event_date"
                class="inputbox"
                label="Date"

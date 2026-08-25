@@ -99,6 +99,9 @@ class EventformModel extends FormModel implements CurrentUserInterface {
 
             $properties = $table->getProperties(1);
             $this->item = ArrayHelper::toObject($properties, CMSObject::class);
+        } else {
+            // New event - step 1 (choose type) already recorded the type in userstate
+            $this->item->event_type_id = (int) Factory::getApplication()->getUserState('com_ra_events.edit.event.type_id', 0);
         }
 
         return $this->item;
@@ -186,14 +189,6 @@ class EventformModel extends FormModel implements CurrentUserInterface {
             return false;
         }
 
-        // The event type can only be set when an event is first created - once
-        // saved, it can't be changed from the front end (matches the admin
-        // edit form, which likewise only shows event_type_id for a new event).
-        $id = (int) $this->getState('event.id');
-        if ($id > 0) {
-            $form->setFieldAttribute('event_type_id', 'type', 'hidden');
-        }
-
         return $form;
     }
 
@@ -242,17 +237,25 @@ class EventformModel extends FormModel implements CurrentUserInterface {
                 throw new \Exception(Text::_('JERROR_ALERTNOAUTHOR'), 403);
             }
 
-            // Never let a posted contact_id/state hijack ownership or bypass moderation.
+            // Never let a posted contact_id/state/event_type_id hijack ownership,
+            // bypass moderation, or change the type after step 1 has set it.
             $data['contact_id'] = $table->contact_id;
             $data['state'] = $table->state;
+            $data['event_type_id'] = $table->event_type_id;
         } else {
             if ($ownContact == 0) {
                 throw new \Exception('You are not registered as a Contact, so cannot create an Event. Please contact the site administrator.', 403);
             }
 
+            $type_id = (int) Factory::getApplication()->getUserState('com_ra_events.edit.event.type_id', 0);
+            if ($type_id <= 0) {
+                throw new \Exception('Please choose an event type first.', 400);
+            }
+
             $data['contact_id'] = $ownContact;
             $data['state'] = 0;
             $data['bookable'] = 1;
+            $data['event_type_id'] = $type_id;
         }
 
         if (!$table->bind($data)) {

@@ -16,6 +16,7 @@ use \Joomla\CMS\Language\Text;
 use \Joomla\CMS\MVC\Controller\FormController;
 use \Joomla\CMS\MVC\Model\BaseDatabaseModel;
 use \Joomla\CMS\Router\Route;
+use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
 
 /**
  * Front-end Event create/edit controller.
@@ -50,13 +51,43 @@ class EventformController extends FormController {
     }
 
     /**
-     * Method to start creating a new Event.
+     * Method to start creating a new Event - step 1, choose the event type.
      *
      * @return  void
      */
     public function add() {
+        $eventsHelper = new EventsHelper;
+        if (is_null($eventsHelper->lookupContactid())) {
+            $this->app->enqueueMessage('You are not registered as a Contact, so cannot create an Event. Please contact the site administrator.', 'warning');
+            $this->setRedirect(Route::_('index.php?option=com_ra_events&view=events', false));
+            return;
+        }
+
         $this->app->setUserState('com_ra_events.edit.event.id', 0);
         $this->app->setUserState('com_ra_events.edit.event.data', null);
+        $this->app->setUserState('com_ra_events.edit.event.type_id', null);
+
+        $this->setRedirect(Route::_('index.php?option=com_ra_events&view=eventform&layout=type', false));
+    }
+
+    /**
+     * Method to record the event type chosen in step 1, and move on to step 2
+     * (the full event form for that type).
+     *
+     * @return  void
+     */
+    public function selectType() {
+        $this->checkToken();
+
+        $type_id = $this->input->getInt('event_type_id', 0);
+
+        if ($type_id <= 0) {
+            $this->app->enqueueMessage('Please choose an event type', 'warning');
+            $this->setRedirect(Route::_('index.php?option=com_ra_events&view=eventform&layout=type', false));
+            return;
+        }
+
+        $this->app->setUserState('com_ra_events.edit.event.type_id', $type_id);
 
         $this->setRedirect(Route::_('index.php?option=com_ra_events&view=eventform&layout=edit', false));
     }
@@ -80,6 +111,7 @@ class EventformController extends FormController {
 
         $this->app->setUserState('com_ra_events.edit.event.id', null);
         $this->app->setUserState('com_ra_events.edit.event.data', null);
+        $this->app->setUserState('com_ra_events.edit.event.type_id', null);
 
         $this->setRedirect(Route::_($url, false));
         $this->redirect();
@@ -154,6 +186,7 @@ class EventformController extends FormController {
         $model->checkin($return);
         $this->app->setUserState('com_ra_events.edit.event.id', null);
         $this->app->setUserState('com_ra_events.edit.event.data', null);
+        $this->app->setUserState('com_ra_events.edit.event.type_id', null);
 
         if (empty($data['id'])) {
             $this->app->enqueueMessage('Event created - it will be visible once reviewed by an administrator', 'success');
