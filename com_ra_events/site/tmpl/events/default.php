@@ -24,6 +24,7 @@ use \Joomla\CMS\HTML\HTMLHelper;
 use \Joomla\CMS\Uri\Uri;
 use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\Layout\LayoutHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 HTMLHelper::_('bootstrap.tooltip');
@@ -41,11 +42,18 @@ $user = Factory::getApplication()->getSession()->get('user');
 $userId = $user->get('id');
 $listOrder = $this->state->get('list.ordering');
 $listDirn = $this->state->get('list.direction');
-$canCreate = $user->authorise('core.create', 'com_ra_events') && file_exists(JPATH_COMPONENT . DIRECTORY_SEPARATOR . 'forms' . DIRECTORY_SEPARATOR . 'eventform.xml');
+$eventsHelperCreate = new EventsHelper;
+$canCreate = ($user->id > 0) && !is_null($eventsHelperCreate->lookupContactid());
 $canEdit = $user->authorise('core.edit', 'com_ra_events') && file_exists(JPATH_COMPONENT . DIRECTORY_SEPARATOR . 'forms' . DIRECTORY_SEPARATOR . 'eventform.xml');
 $canCheckin = $user->authorise('core.manage', 'com_ra_events');
 $canChange = $user->authorise('core.edit.state', 'com_ra_events');
 $canDelete = $user->authorise('core.delete', 'com_ra_events');
+
+if ($canCreate) {
+    $toolsHelperCreate = new ToolsHelper();
+    $create_target = 'index.php?option=com_ra_events&task=eventform.add&Itemid=' . $this->menu_id;
+    echo $toolsHelperCreate->buildButton($create_target, 'Create Event', false, 'darkgreen');
+}
 
 // Import CSS
 $wa = $this->document->getWebAssetManager();

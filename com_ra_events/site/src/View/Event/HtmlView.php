@@ -23,6 +23,7 @@ use \Joomla\CMS\Factory;
 use \Joomla\CMS\Language\Text;
 use \Joomla\CMS\User\CurrentUserInterface;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 /**
@@ -163,6 +164,18 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
             $back .= '&layout=' . $this->layout;
         }
         $buttons = $this->toolsHelper->backButton($back, $caption);
+
+        // Only the event's own organiser (or a user with core.edit) may edit it
+        $eventsHelper = new EventsHelper;
+        $ownContact = $eventsHelper->lookupContactid();
+        $canEditEvent = $this->user->authorise('core.edit', 'com_ra_events')
+                || (!is_null($ownContact) && $ownContact == $this->item->contact_id);
+        if ($canEditEvent) {
+            $edit_event_target = 'index.php?option=com_ra_events&task=eventform.edit&id=' . $this->item->id;
+            $edit_event_target .= '&Itemid=' . $this->menu_id;
+            $buttons .= $this->toolsHelper->buildButton($edit_event_target, 'Edit Event', false, 'sunrise');
+        }
+
         // get any bookings, confirmed or provisional
  //       echo 'view: event id=' . $this->item->id . ' - event type id=' . $this->event_type_id . '<br>';
         $tot_bookings = $this->bookingHelper->countActiveBookings($this->item->id);

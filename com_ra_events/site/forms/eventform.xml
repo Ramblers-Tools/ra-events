@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Front-end (site-side) Event create/edit form.
+  Field names mirror administrator/forms/event.xml so both bind to the same
+  #__ra_events columns via the shared administrator EventTable. Only a reduced
+  "core" subset is editable here (see below); everything else is carried
+  forward as a hidden field so the admin Table's bind()/check() logic (which
+  reads several of these fields directly) still has consistent values to work
+  with, and admin-only settings are never blanked out by a front-end save.
+-->
+<form>
+    <fieldset name="mainFieldset">
+        <field name="id" type="hidden" filter="int" default="0"/>
+        <!-- New events are unpublished until an admin reviews them; edits keep the existing state -->
+        <field name="state" type="hidden" filter="int" default="0"/>
+        <!-- Set programmatically by EventformModel to the current user's own contact record -->
+        <field name="contact_id" type="hidden" filter="int" default="0"/>
+        <field name="event_type_id" type="hidden" filter="int" default="1"/>
+
+        <field name="title" size="50" maxlength="50" filter="safehtml" type="text"
+               label="Title"
+               description="Title of the Event"
+               required="true"/>
+
+        <field name="event_date"
+               class="inputbox"
+               label="Date"
+               description="Date of the Event (YYYY-MM-DD)"
+               type="calendar" singleheader="false" todaybutton="false" weeknumbers="false" filltable="true"
+               filter="user_utc" translateformat="false" showtime="false" format="%Y-%m-%d" timeformat="12"
+               required="true"
+               hint="YYYY-MM-DD"/>
+        <field name="event_date_end" type="hidden" filter="raw" default=""/>
+        <field name="event_time"
+               default="19:00"
+               size="5"
+               maxlength="5"
+               filter="safehtml"
+               type="text"
+               required="true"
+               validate="Timefield"
+               label="Time"
+               description="Time the Event starts"
+               hint="HH:MM"/>
+
+        <field name="location"
+               filter="safehtml" type="text"
+               label="Location"
+               description="Where the Event is being held"/>
+
+        <field name="details"
+               type="editor"
+               buttons="true"
+               class="inputbox"
+               filter="safehtml"
+               label="Details"
+               description="Description of the Event"/>
+
+        <field name="bookable" type="hidden" filter="int" default="1"/>
+
+        <field
+            name="requires_payment"
+            type="radio"
+            label="Requires payment"
+            description="Does attending this event require payment"
+            class="btn-group btn-group-yesno"
+            default="0"
+            >
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+        </field>
+        <field name="max_bookings"
+               size="5"
+               maxlength="3"
+               filter="int" type="text"
+               label="Max Bookings"
+               description="Maximum number of bookings acceptable for the Event"
+               />
+        <field
+            name="waiting_list_enabled"
+            type="radio"
+            label="Waiting list"
+            description="If the event is full, allow users to join a waiting list"
+            class="btn-group btn-group-yesno"
+            default="0"
+            >
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+        </field>
+        <field name="booking_info"
+               type="editor"
+               buttons="true"
+               class="inputbox"
+               filter="safehtml"
+               label="Booking information"
+               description="Message to be shown when a booking is made, e.g. payment details"/>
+
+        <field name="notify_organiser" type="hidden" filter="int" default="0"/>
+        <field name="group_code" type="hidden" filter="safehtml" default=""/>
+        <field name="reports" type="hidden" filter="safehtml" default=""/>
+        <field name="minutes" type="hidden" filter="safehtml" default=""/>
+        <field name="url" type="hidden" filter="raw" default=""/>
+        <field name="url_description" type="hidden" filter="safehtml" default=""/>
+        <field name="attachments" type="hidden" filter="raw" default=""/>
+        <field name="attachment_description" type="hidden" filter="safehtml" default=""/>
+        <field name="shareable" type="hidden" filter="int" default="0"/>
+        <field name="booking1" type="hidden" filter="safehtml" default=""/>
+        <field name="booking1_hint" type="hidden" filter="safehtml" default=""/>
+        <field name="booking2" type="hidden" filter="safehtml" default=""/>
+        <field name="booking2_hint" type="hidden" filter="safehtml" default=""/>
+        <field name="api_site_id" type="hidden" filter="int" default=""/>
+        <field name="original_id" type="hidden" filter="int" default=""/>
+        <field name="share_date" type="hidden" filter="raw" default=""/>
+        <field name="publication_date" type="hidden" filter="raw" default=""/>
+        <field name="created" type="hidden" filter="raw" default=""/>
+        <field name="created_by" type="hidden" filter="int" default="0"/>
+        <field name="modified" type="hidden" filter="raw" default=""/>
+        <field name="modified_by" type="hidden" filter="int" default="0"/>
+        <field name="checked_out_time" type="hidden" filter="unset"/>
+        <field name="version_note" type="hidden" filter="safehtml" default=""/>
+        <field name="email" type="hidden" filter="safehtml" default=""/>
+    </fieldset>
+</form>
