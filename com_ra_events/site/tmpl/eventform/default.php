@@ -64,7 +64,13 @@ if ($isNew) {
         <?php echo $this->form->renderField('title'); ?>
         <?php echo $this->form->renderField('group_code'); ?>
         <?php echo $this->form->renderField('location'); ?>
-        <?php echo $this->form->renderField('details'); ?>
+        <?php
+        if ($isCommittee) {
+            $this->form->setFieldAttribute('details', 'label', 'Agenda');
+            $this->form->setFieldAttribute('details', 'description', 'Agenda for the meeting');
+        }
+        echo $this->form->renderField('details');
+        ?>
 
         <?php if ($isCommittee): ?>
             <?php echo $this->form->renderField('reports'); ?>

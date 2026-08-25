@@ -25,6 +25,7 @@
     25/08/26 RH version 2.10.5 - fix fresh-install SQL missing #__ra_bookings.special_request (present via script.php migration but absent from install.mysql.utf8.sql)
     25/08/26 RH version 2.10.6 - stack event type choices vertically on create-event step 1
     25/08/26 RH version 2.10.7 - widen #__ra_event_types.description from varchar(20) to varchar(100)
+    25/08/26 RH version 2.10.8 - front-end event form: label the Details field "Agenda" for Committee meetings
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -35,7 +36,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.10.7</version>
+    <version>2.10.8</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	
