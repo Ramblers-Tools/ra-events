@@ -54,9 +54,11 @@ if ($isNew) {
         <?php echo $this->form->renderField('event_date'); ?>
         <?php if ($isHolidayWeekend): ?>
             <?php echo $this->form->renderField('event_date_end'); ?>
-        <?php else: ?>
-            <input type="hidden" name="jform[event_date_end]" value="<?php echo htmlspecialchars((string) $this->item->event_date_end); ?>" />
         <?php endif; ?>
+        <?php // When not a Holiday/weekend, event_date_end is simply not posted -
+              // EventTable::bind() has no null-handling for this column (unlike
+              // most others), so posting '' triggers an "Incorrect date value"
+              // DB error. Omitting the key entirely leaves the loaded/NULL value untouched. ?>
         <?php echo $this->form->renderField('event_time'); ?>
 
         <?php echo $this->form->renderField('title'); ?>
