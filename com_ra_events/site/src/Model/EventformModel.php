@@ -186,6 +186,14 @@ class EventformModel extends FormModel implements CurrentUserInterface {
             return false;
         }
 
+        // The event type can only be set when an event is first created - once
+        // saved, it can't be changed from the front end (matches the admin
+        // edit form, which likewise only shows event_type_id for a new event).
+        $id = (int) $this->getState('event.id');
+        if ($id > 0) {
+            $form->setFieldAttribute('event_type_id', 'type', 'hidden');
+        }
+
         return $form;
     }
 
