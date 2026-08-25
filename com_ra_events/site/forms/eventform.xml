@@ -41,6 +41,7 @@
                description="Last date of the holiday (YYYY-MM-DD)"
                type="calendar" singleheader="false" todaybutton="false" weeknumbers="false" filltable="true"
                filter="raw" translateformat="false" showtime="false" format="%Y-%m-%d" timeformat="12"
+               showon="event_type_id:4"
                hint="YYYY-MM-DD"/>
         <field name="event_time"
                default="19:00"
@@ -71,16 +72,19 @@
                buttons="true"
                class="inputbox"
                filter="safehtml"
-               label="Details"
-               description="Description of the Event"/>
+               label="Agenda"
+               showon="event_type_id:1"
+               description="Agenda for the meeting"/>
         <field name="reports" type="editor" buttons="true" class="inputbox" filter="safehtml"
                label="Reports"
+               showon="event_type_id:1"
                description="Reports from the Officers"/>
         <field name="minutes"
                type="editor"
                buttons="true"
                class="inputbox" filter="safehtml"
                label="Minutes"
+               showon="event_type_id:1"
                description="Minutes of the meeting"/>
         <field name="url"
                validate="url"
@@ -108,7 +112,6 @@
             type="radio"
             label="Bookable"
             description="Are bookings required for this event"
-            class="btn-group btn-group-yesno"
             default="0"
             >
                 <option value="1">JYES</option>
@@ -119,7 +122,6 @@
             type="radio"
             label="Requires payment"
             description="Does attending this event require payment"
-            class="btn-group btn-group-yesno"
             default="0"
             showon="bookable:1"
             >
@@ -139,7 +141,6 @@
             type="radio"
             label="Waiting list"
             description="If the event is full, allow users to join a waiting list"
-            class="btn-group btn-group-yesno"
             default="0"
             showon="bookable:1"
             >
@@ -152,7 +153,6 @@
             label="Notify organiser"
             description="If Yes, an email will be sent to the Organiser whenever a booking is made "
             showon="bookable:1"
-            class="btn-group btn-group-yesno"
             default="0"
             >
                 <option value="1">JYES</option>
@@ -196,7 +196,6 @@
             type="radio"
             label="Shareable"
             description="Can this event be shared via the website interface"
-            class="btn-group btn-group-yesno"
             default="0"
             >
                 <option value="1">JYES</option>
