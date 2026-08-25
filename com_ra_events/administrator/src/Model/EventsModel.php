@@ -150,8 +150,11 @@ class EventsModel extends ListModel {
         $query->leftJoin('#__ra_event_types AS event_type ON event_type.id = a.event_type_id');
         $query->leftJoin('#__contact_details AS c ON c.id = a.contact_id');
 
-        // Filter by published state
-        $published = $this->getState('filter.state', '1');
+        // Filter by published state - default matches the filter form's own
+        // default ("All Events", value ""), so a fresh admin session sees
+        // both published and unpublished (e.g. events pending review) rather
+        // than only published ones until the Status filter is touched.
+        $published = $this->getState('filter.state', '');
 
         if (is_numeric($published)) {
             $query->where('a.state = ' . (int) $published);
