@@ -2,26 +2,31 @@
 <!--
   Front-end (site-side) Event create/edit form.
   Field names mirror administrator/forms/event.xml so both bind to the same
-  #__ra_events columns via the shared administrator EventTable. Only a reduced
-  "core" subset is editable here (see below); everything else is carried
-  forward as a hidden field so the admin Table's bind()/check() logic (which
-  reads several of these fields directly) still has consistent values to work
-  with, and admin-only settings are never blanked out by a front-end save.
+  #__ra_events columns via the shared administrator EventTable - full field
+  parity with the admin form, except for the identity/audit fields (id,
+  state, contact_id, created*, modified*, checked_out_time) which stay
+  hidden and are managed server-side by EventformModel/EventTable, never
+  taken from posted data.
 -->
-<form>
+<form addfieldprefix="Ramblers\Component\Ra_tools\Site\Field">
     <fieldset name="mainFieldset">
         <field name="id" type="hidden" filter="int" default="0"/>
         <!-- New events are unpublished until an admin reviews them; edits keep the existing state -->
         <field name="state" type="hidden" filter="int" default="0"/>
         <!-- Set programmatically by EventformModel to the current user's own contact record -->
         <field name="contact_id" type="hidden" filter="int" default="0"/>
-        <field name="event_type_id" type="hidden" filter="int" default="1"/>
 
-        <field name="title" size="50" maxlength="50" filter="safehtml" type="text"
-               label="Title"
-               description="Title of the Event"
+        <field name="event_type_id"
+               type="foreignkey"
+               label="Type"
+               description="Type of Event"
+               default=""
+               input_type="list"
+               table="#__ra_event_types"
+               key_field="id"
+               translate="true"
+               value_field="description"
                required="true"/>
-
         <field name="event_date"
                class="inputbox"
                label="Date"
@@ -30,7 +35,13 @@
                filter="user_utc" translateformat="false" showtime="false" format="%Y-%m-%d" timeformat="12"
                required="true"
                hint="YYYY-MM-DD"/>
-        <field name="event_date_end" type="hidden" filter="raw" default=""/>
+        <field name="event_date_end"
+               class="inputbox"
+               label="Last Date"
+               description="Last date of the holiday (YYYY-MM-DD)"
+               type="calendar" singleheader="false" todaybutton="false" weeknumbers="false" filltable="true"
+               filter="raw" translateformat="false" showtime="false" format="%Y-%m-%d" timeformat="12"
+               hint="YYYY-MM-DD"/>
         <field name="event_time"
                default="19:00"
                size="5"
@@ -43,11 +54,18 @@
                description="Time the Event starts"
                hint="HH:MM"/>
 
+        <field name="title" size="50" maxlength="50" filter="safehtml" type="text"
+               label="Title"
+               description="Title of the Event"
+               required="true"/>
+        <field name="group_code" filter="safehtml" type="text"
+               label="Group code"
+               description="Four character Group code, or two character Area code"
+               hint="XX01"/>
         <field name="location"
                filter="safehtml" type="text"
                label="Location"
                description="Where the Event is being held"/>
-
         <field name="details"
                type="editor"
                buttons="true"
@@ -55,9 +73,47 @@
                filter="safehtml"
                label="Details"
                description="Description of the Event"/>
+        <field name="reports" type="editor" buttons="true" class="inputbox" filter="safehtml"
+               label="Reports"
+               description="Reports from the Officers"/>
+        <field name="minutes"
+               type="editor"
+               buttons="true"
+               class="inputbox" filter="safehtml"
+               label="Minutes"
+               description="Minutes of the meeting"/>
+        <field name="url"
+               validate="url"
+               type="url"
+               label="Weblink"
+               description="Link to a related website"
+               />
+        <field name="url_description"
+               filter="safehtml" type="text"
+               label="Weblink desc"
+               description="Description of the link"/>
+        <field name="attachments"
+               directory="images/com_ra_events"
+               type="file"
+               label="Attachment" description="File to be included" />
+        <field name="attachment_description"
+               filter="safehtml"
+               type="text"
+               label="Attachment desc"
+               description="Description of the attachment"
+               hint="Attachment"/>
 
-        <field name="bookable" type="hidden" filter="int" default="1"/>
-
+        <field
+            name="bookable"
+            type="radio"
+            label="Bookable"
+            description="Are bookings required for this event"
+            class="btn-group btn-group-yesno"
+            default="0"
+            >
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+        </field>
         <field
             name="requires_payment"
             type="radio"
@@ -65,6 +121,7 @@
             description="Does attending this event require payment"
             class="btn-group btn-group-yesno"
             default="0"
+            showon="bookable:1"
             >
                 <option value="1">JYES</option>
                 <option value="0">JNO</option>
@@ -73,6 +130,7 @@
                size="5"
                maxlength="3"
                filter="int" type="text"
+               showon="bookable:1"
                label="Max Bookings"
                description="Maximum number of bookings acceptable for the Event"
                />
@@ -81,6 +139,19 @@
             type="radio"
             label="Waiting list"
             description="If the event is full, allow users to join a waiting list"
+            class="btn-group btn-group-yesno"
+            default="0"
+            showon="bookable:1"
+            >
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+        </field>
+        <field
+            name="notify_organiser"
+            type="radio"
+            label="Notify organiser"
+            description="If Yes, an email will be sent to the Organiser whenever a booking is made "
+            showon="bookable:1"
             class="btn-group btn-group-yesno"
             default="0"
             >
@@ -93,25 +164,63 @@
                class="inputbox"
                filter="safehtml"
                label="Booking information"
+               showon="bookable:1"
                description="Message to be shown when a booking is made, e.g. payment details"/>
+        <field name="booking1"
+               filter="safehtml" type="text"
+               showon="bookable:1"
+               label="Custom 1"
+               description="First custom field for Bookings"
+               />
+        <field name="booking1_hint"
+               filter="safehtml" type="text"
+               showon="bookable:1"
+               label="Custom 1 - hint"
+               description="Hint to be shown for first custom field"
+               />
+        <field name="booking2"
+               filter="safehtml" type="text"
+               showon="bookable:1"
+               label="Custom 2"
+               description="Second custom field for Bookings"
+               />
+        <field name="booking2_hint"
+               filter="safehtml" type="text"
+               showon="bookable:1"
+               label="Custom 2 - hint"
+               description="Hint to be shown for second custom field"
+               />
 
-        <field name="notify_organiser" type="hidden" filter="int" default="0"/>
-        <field name="group_code" type="hidden" filter="safehtml" default=""/>
-        <field name="reports" type="hidden" filter="safehtml" default=""/>
-        <field name="minutes" type="hidden" filter="safehtml" default=""/>
-        <field name="url" type="hidden" filter="raw" default=""/>
-        <field name="url_description" type="hidden" filter="safehtml" default=""/>
-        <field name="attachments" type="hidden" filter="raw" default=""/>
-        <field name="attachment_description" type="hidden" filter="safehtml" default=""/>
-        <field name="shareable" type="hidden" filter="int" default="0"/>
-        <field name="booking1" type="hidden" filter="safehtml" default=""/>
-        <field name="booking1_hint" type="hidden" filter="safehtml" default=""/>
-        <field name="booking2" type="hidden" filter="safehtml" default=""/>
-        <field name="booking2_hint" type="hidden" filter="safehtml" default=""/>
+        <field
+            name="shareable"
+            type="radio"
+            label="Shareable"
+            description="Can this event be shared via the website interface"
+            class="btn-group btn-group-yesno"
+            default="0"
+            >
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+        </field>
+        <field name="share_date"
+               class="inputbox"
+               type="calendar" singleheader="false" todaybutton="true" weeknumbers="false" filltable="true"
+               filter="user_utc" translateformat="false" showtime="false" format="%Y-%m-%d" timeformat="12"
+               label="Share Date"
+               description="Event will not be available to the API before this date"
+               showon="shareable:1"
+               hint="YYYY-MM-DD"/>
+        <field name="publication_date"
+               class="inputbox"
+               type="calendar" singleheader="false" todaybutton="true" weeknumbers="false" filltable="true"
+               filter="user_utc" translateformat="false" showtime="false" format="%Y-%m-%d" timeformat="12"
+               label="Publication Date"
+               description="Event will not be displayed before this date"
+               hint="YYYY-MM-DD"/>
+
+        <!-- Read-only/system-managed - not user-editable -->
         <field name="api_site_id" type="hidden" filter="int" default=""/>
         <field name="original_id" type="hidden" filter="int" default=""/>
-        <field name="share_date" type="hidden" filter="raw" default=""/>
-        <field name="publication_date" type="hidden" filter="raw" default=""/>
         <field name="created" type="hidden" filter="raw" default=""/>
         <field name="created_by" type="hidden" filter="int" default="0"/>
         <field name="modified" type="hidden" filter="raw" default=""/>
