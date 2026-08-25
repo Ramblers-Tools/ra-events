@@ -106,7 +106,7 @@ INSERT INTO `#__ra_event_states` (seq,id,title) VALUES
 DROP TABLE IF EXISTS `#__ra_event_types`;
 CREATE TABLE IF NOT EXISTS `#__ra_event_types` (
     `id` int(11) UNSIGNED  NOT NULL AUTO_INCREMENT,
-    `description` varchar(20) NOT NULL,
+    `description` varchar(100) NOT NULL,
     `ordering` INT NOT NULL DEFAULT 0,
     `state` TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`)

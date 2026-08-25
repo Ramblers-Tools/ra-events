@@ -402,13 +402,16 @@ class Com_Ra_eventsInstallerScript {
 // If we return false, no message is displayed on the console, just "Custom installation failure"
 //           return false;
         }
-        $this->version_required = '2.8.0';
+        $this->version_required = '2.10.6';
         if (version_compare($this->current_version, $this->version_required, 'ge')) {
             echo 'Current version is ' . $this->current_version . ', no additional processing required</p>';
             return true;
         } else {
             echo '<p>Version is currently ' . $this->current_version . ', ';
             echo 'Requires version >= ' . $this->version_required . '</p>';
+        }
+        if (version_compare($this->current_version, '2.10.6', 'le')) {
+            $this->checkColumn('ra_event_types', 'description', 'U', 'VARCHAR(100) NOT NULL; ');
         }
         if (version_compare($this->current_version, '2.7.2', 'le')) {
             $this->checkColumn('ra_events', 'waiting_list_enabled', 'A', 'INT DEFAULT "0" AFTER max_bookings; ');
