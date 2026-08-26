@@ -294,6 +294,13 @@ class BookingformModel extends FormModel implements CurrentUserInterface {
 
         if (empty($data)) {
             $data = $this->getItem();
+            $callback = Factory::getApplication()->getUserState('com_ra_events.bookingform.callback', '');
+            if ($callback == 'profiles' && empty($data->id)) {
+                // The organiser is adding someone directly - default to Confirmed rather
+                // than Provisional. (If the event actually needs the waiting list, save()
+                // re-checks capacity and forces the real state regardless of this default.)
+                $data->state = 1;
+            }
         }
 
         if ($data) {
@@ -367,6 +374,8 @@ class BookingformModel extends FormModel implements CurrentUserInterface {
             $notify_organiser = '0';
         }
 //       die('notify_organiser = ' . $notify_organiser);
+        $callback = Factory::getApplication()->getUserState('com_ra_events.bookingform.callback', '');
+
         try {
             if ($table->save($data) === true) {
 //                Factory::getApplication()->enqueueMessage('Model:  table id=' . $table->id, 'info');
@@ -374,12 +383,20 @@ class BookingformModel extends FormModel implements CurrentUserInterface {
                     $bookingHelper->saveGuests($table->id, $guests);
                 }
                 Factory::getApplication()->setUserState('com_ra_events.bookingform.id', $table->id);
-                if ($notify_organiser == '1') {
-                    $mode = 2;
+                if (empty($id) && $callback == 'profiles' && $table->state == 1) {
+                    // Organiser added someone directly as Confirmed - run the same
+                    // confirm step as the Select Users "Book" button (sets
+                    // confirmed_by/confirmed date, sends the "confirmed" email) instead
+                    // of the acknowledgement below, which always reads as "provisional".
+                    $bookingHelper->confirmBooking($table->id);
                 } else {
-                    $mode = 1;
+                    if ($notify_organiser == '1') {
+                        $mode = 2;
+                    } else {
+                        $mode = 1;
+                    }
+                    $bookingHelper->sendAcknowledgement($table->id, $mode);
                 }
-                $bookingHelper->sendAcknowledgement($table->id, $mode);
 //                Factory::getApplication()->enqueueMessage('Model:  send acknowledgement for booking id=' . $table->id, 'info');
                 return $table->id;
             } else {
