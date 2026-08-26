@@ -65,17 +65,12 @@ echo $this->intro;
         <?php echo $this->form->getInput('modified_by'); ?>
         <div class="control-group">
             <?php
-            echo $this->form->renderField('num_places');
-            echo $this->form->renderField('partner');
-            echo $this->form->renderField('special_request');
-            $sql = 'SELECT booking1, booking1_hint, booking2, booking2_hint FROM #__ra_events WHERE id=' . $this->event_id;
+            $sql = 'SELECT booking1, booking1_hint, booking2, booking2_hint, ';
+            $sql .= 'multi_guest_enabled, max_guests ';
+            $sql .= 'FROM #__ra_events WHERE id=' . $this->event_id;
             $event = $toolsHelper->getItem($sql);
-            if ($event->booking1 !== '') {
-                echo $this->form->renderField('custom1');
-            }
-            if ($event->booking2 !== '') {
-                echo $this->form->renderField('custom2');
-            }
+            $isMultiGuestEvent = ($event->multi_guest_enabled == 1);
+
             // Find the number of places available
             $sql = 'SELECT max_bookings FROM #__ra_events WHERE id=' . $this->event_id;
             $max_places = $toolsHelper->getValue($sql);
@@ -94,9 +89,54 @@ echo $this->intro;
             $sql .= 'AND e.state=1 ';
             $sql .= 'AND b.state=0 ';
             $provisional = $this->toolsHelper->getValue($sql);
-            $available = $this->item->max_bookings - $tot_bookings;
+
+            if ($isMultiGuestEvent) {
+                // Guest count picker + N guest-name inputs, revealed by JS. Not part of
+                // the formal jform schema (posted as a plain array alongside jform) since
+                // the number of visible inputs is dynamic.
+                $existingOwnPlaces = ($this->item->id > 0) ? (int) $this->item->num_places : 0;
+                $remainingExcludingSelf = $max_places - $confirmed - $provisional + $existingOwnPlaces;
+                $guestCap = max(0, min((int) $event->max_guests, $remainingExcludingSelf - 1));
+                $existingGuests = ($this->item->id > 0) ? $bookingHelper->guestNames($this->item->id) : array();
+                $existingGuestCount = count($existingGuests);
+                ?>
+                <div class="control-group">
+                    <div class="control-label"><label for="guest_count">Number of guests</label></div>
+                    <div class="controls">
+                        <select name="guest_count" id="guest_count">
+                            <?php for ($i = 0; $i <= $guestCap; $i++): ?>
+                                <option value="<?php echo $i; ?>" <?php echo ($i == $existingGuestCount) ? 'selected="selected"' : ''; ?>><?php echo $i; ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                </div>
+                <?php for ($i = 1; $i <= max($guestCap, $existingGuestCount); $i++): ?>
+                    <div class="control-group guest-name-field" data-guest-index="<?php echo $i; ?>" style="<?php echo ($i <= $existingGuestCount) ? '' : 'display:none;'; ?>">
+                        <div class="control-label"><label for="guest_name_<?php echo $i; ?>">Guest <?php echo $i; ?> name</label></div>
+                        <div class="controls">
+                            <input type="text" name="guests[]" id="guest_name_<?php echo $i; ?>" maxlength="100"
+                                   value="<?php echo isset($existingGuests[$i - 1]) ? htmlspecialchars($existingGuests[$i - 1]) : ''; ?>" />
+                        </div>
+                    </div>
+                <?php endfor; ?>
+                <input type="hidden" name="jform[num_places]" value="<?php echo max(1, $existingGuestCount + 1); ?>" id="jform_num_places_hidden" />
+                <input type="hidden" name="jform[partner]" value="" />
+                <?php
+            } else {
+                echo $this->form->renderField('num_places');
+                echo $this->form->renderField('partner');
+            }
+            ?>
+            <?php
+            echo $this->form->renderField('special_request');
+            if ($event->booking1 !== '') {
+                echo $this->form->renderField('custom1');
+            }
+            if ($event->booking2 !== '') {
+                echo $this->form->renderField('custom2');
+            }
             echo 'Total available places: <b>' . $max_places . '</b>'   ;
-            echo ', Confirmed places: <b>' . $confirmed . '</b>';         
+            echo ', Confirmed places: <b>' . $confirmed . '</b>';
             if (isset($this->item->num_places) && $this->item->num_places == 2) {
                 // Booking is for two places
                 $num_requested = 2  ;
@@ -170,3 +210,37 @@ echo $this->intro;
                <?php echo HTMLHelper::_('form.token'); ?>
     </form>
 </div>
+
+<?php if ($isMultiGuestEvent): ?>
+<script>
+    (function () {
+        var select = document.getElementById('guest_count');
+        var fields = document.querySelectorAll('.guest-name-field');
+        var numPlacesHidden = document.getElementById('jform_num_places_hidden');
+
+        function update() {
+            var count = parseInt(select.value, 10) || 0;
+            fields.forEach(function (field) {
+                var index = parseInt(field.getAttribute('data-guest-index'), 10);
+                var input = field.querySelector('input');
+                if (index <= count) {
+                    field.style.display = '';
+                    input.required = true;
+                } else {
+                    field.style.display = 'none';
+                    input.required = false;
+                    input.value = '';
+                }
+            });
+            if (numPlacesHidden) {
+                numPlacesHidden.value = count + 1;
+            }
+        }
+
+        if (select) {
+            select.addEventListener('change', update);
+            update();
+        }
+    })();
+</script>
+<?php endif; ?>

@@ -211,7 +211,52 @@ class BookingformController extends FormController {
         // Validate the posted data.
         $data = $model->validate($form, $data);
         $error = false;
-        if (($data["num_places"] == 2) AND ($data["partner"] == '')) {
+
+        $event_id = (int) $this->app->getUserState('com_ra_events.bookingform.event_id', 0);
+        $toolsHelper = new ToolsHelper;
+        $sql = 'SELECT multi_guest_enabled, max_guests, max_bookings FROM #__ra_events WHERE id=' . $event_id;
+        $event = $toolsHelper->getItem($sql);
+        $isMultiGuestEvent = (!is_null($event) && $event->multi_guest_enabled == 1);
+
+        if ($isMultiGuestEvent) {
+            $guestCount = $this->input->getInt('guest_count', 0);
+            $postedGuests = $this->input->get('guests', array(), 'array');
+            $postedGuests = array_map('trim', array_slice($postedGuests, 0, $guestCount));
+
+            if ($guestCount > (int) $event->max_guests) {
+                $this->app->enqueueMessage('Too many guests selected for this event', 'error');
+                $error = true;
+            } elseif (count(array_filter($postedGuests, function ($n) {
+                        return $n !== '';
+                    })) < $guestCount) {
+                $this->app->enqueueMessage('All guest names must be given', 'error');
+                $error = true;
+            } else {
+                // Server-side capacity enforcement - the form only offers options that
+                // fit at the time it was rendered, but re-check here too since capacity
+                // may have changed between rendering and submitting.
+                $editId = (int) $this->app->getUserState('com_ra_events.edit.booking.id');
+                $existingOwnPlaces = 0;
+                if ($editId) {
+                    $sql = 'SELECT num_places FROM #__ra_bookings WHERE id=' . $editId;
+                    $existingOwnPlaces = (int) $toolsHelper->getValue($sql);
+                }
+                $sql = 'SELECT SUM(num_places) AS tot FROM #__ra_bookings ';
+                $sql .= 'WHERE event_id=' . $event_id . ' AND state IN (0,1)';
+                $activePlaces = (int) $toolsHelper->getValue($sql);
+                $requested = $guestCount + 1;
+                if (($activePlaces - $existingOwnPlaces + $requested) > $event->max_bookings) {
+                    $this->app->enqueueMessage('Not enough places left for that many guests - please reduce the number of guests or use the waiting list', 'error');
+                    $error = true;
+                }
+            }
+
+            if (!$error) {
+                $data['num_places'] = $guestCount + 1;
+                $data['partner'] = '';
+                $data['_guests'] = $postedGuests;
+            }
+        } elseif (($data["num_places"] == 2) AND ($data["partner"] == '')) {
             $this->app->enqueueMessage('Name of second person must be given', 'error');
             $error = true;
         }

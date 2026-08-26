@@ -92,6 +92,8 @@ class EventController extends BaseController {
         }
 //        echo $sql . '<br>';
         $rows = $this->toolsHelper->getRows($sql);
+        $bookingHelper = new BookingHelper;
+        $guestsByBooking = $bookingHelper->guestNamesForEvent($event_id);
 
         // Build column headings based on sort order and presence of custom fields
         $column_headings = '';
@@ -122,7 +124,7 @@ class EventController extends BaseController {
                 }
                 $csvData .= $row->created . ', ';
                 $csvData .= $row->email . ', ';
-                $csvData .= $row->partner;
+                $csvData .= isset($guestsByBooking[$row->id]) ? implode(' / ', $guestsByBooking[$row->id]) : $row->partner;
                 if ($event->booking1 !== '') {
                     $csvData .= ', ' . $row->custom1;
                 }
@@ -198,7 +200,7 @@ class EventController extends BaseController {
                 }
                 $toolsTable->add_item($row->created);
                 $toolsTable->add_item($row->email);
-                $toolsTable->add_item($row->partner);
+                $toolsTable->add_item(isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner);
                 if ($event->booking1 !== '') {
                     $toolsTable->add_item($row->custom1);
                 }
@@ -213,7 +215,9 @@ class EventController extends BaseController {
             $names = [];
             foreach ($rows as $row) {
                 $names[] = $row->preferred_name;
-                if ($row->num_places == 2) {
+                if (!empty($guestsByBooking[$row->id])) {
+                    $names = array_merge($names, $guestsByBooking[$row->id]);
+                } elseif ($row->num_places == 2) {
                     $names[] = $row->partner;
                 }
             }

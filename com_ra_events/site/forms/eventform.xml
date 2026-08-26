@@ -140,6 +140,23 @@
                 <option value="1">JYES</option>
                 <option value="0">JNO</option>
         </field>
+        <field
+            name="multi_guest_enabled"
+            type="radio"
+            label="Multi-guest booking"
+            description="Allow a booker to bring more than one guest"
+            default="0"
+            >
+                <option value="1">JYES</option>
+                <option value="0">JNO</option>
+        </field>
+        <field name="max_guests"
+               size="5"
+               maxlength="3"
+               filter="int" type="text"
+               label="Max guests per booking"
+               description="Maximum number of additional guests a booker may bring, not counting themselves"
+               />
         <field name="booking_info"
                type="editor"
                buttons="true"

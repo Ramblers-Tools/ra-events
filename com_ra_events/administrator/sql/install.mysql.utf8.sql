@@ -39,6 +39,16 @@ INDEX idx_userid(user_id)
 ) DEFAULT COLLATE=utf8mb4_unicode_ci;
 
 #-------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `#__ra_booking_guests` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `booking_id` INT NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `created` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    INDEX idx_booking_id(booking_id)
+) DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+#-------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `#__ra_events` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
     `event_id` INT NULL ,
@@ -65,6 +75,8 @@ CREATE TABLE IF NOT EXISTS `#__ra_events` (
     `requires_payment` INT DEFAULT '0',
     `max_bookings`INT DEFAULT '20',
     `waiting_list_enabled` INT DEFAULT '0',
+    `multi_guest_enabled` INT DEFAULT '0',
+    `max_guests` INT DEFAULT '1',
     `num_bookings`INT DEFAULT '0',
     `notify_organiser`INT DEFAULT '0',
     `booking_info` TEXT DEFAULT NULL,

@@ -162,6 +162,8 @@ if ($api_site_id > 0) {
             echo $this->form->renderField('requires_payment');
             echo $this->form->renderField('max_bookings');
             echo $this->form->renderField('waiting_list_enabled');
+            echo $this->form->renderField('multi_guest_enabled');
+            echo $this->form->renderField('max_guests');
 
             if (is_null($this->item->api_site_id)) {
                 echo $this->form->renderField('notify_organiser');

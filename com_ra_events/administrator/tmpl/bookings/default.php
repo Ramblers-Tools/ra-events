@@ -17,6 +17,9 @@ use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\Layout\LayoutHelper;
 use \Joomla\CMS\Language\Text;
 use Joomla\CMS\Session\Session;
+use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
+
+$bookingHelper = new BookingHelper;
 
 HTMLHelper::_('bootstrap.tooltip');
 HTMLHelper::_('behavior.multiselect');
@@ -118,7 +121,10 @@ $listDirn = $this->state->get('list.direction');
                                     <?php echo $item->num_places; ?>
                                 </td>
                                 <td>
-                                    <?php echo $item->partner; ?>
+                                    <?php
+                                    $guests = $bookingHelper->guestNames($item->id);
+                                    echo !empty($guests) ? implode(', ', $guests) : $item->partner;
+                                    ?>
                                 </td>
 
                                 <td class="text-center">

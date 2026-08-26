@@ -482,6 +482,9 @@ class BookingController extends FormController {
         $target_edit = 'index.php?option=com_ra_events&task=booking.makeBooking&Itemid=' . $menu_id;
         $target_edit .= '&callback=showBookings';
         $rows = $this->toolsHelper->getRows($sql);
+        $bookingHelper = new BookingHelper;
+        $guestsByBooking = $bookingHelper->guestNamesForEvent($event_id);
+        $guestModals = '';
         $provisional_bookings = 0;
         $provisional_places = 0;
         $confirmed_bookings = 0;
@@ -513,7 +516,37 @@ class BookingController extends FormController {
                 $table->add_item($row->preferred_name . $link);
             }
             $table->add_item($row->num_places);
-            $table->add_item($row->partner);
+            if (!empty($guestsByBooking[$row->id])) {
+                $modalId = 'guestsModal' . $row->id;
+                $q = chr(34);
+                $guestButton = '<a class=' . $q . 'ra-icon-btn ra-dark' . $q;
+                $guestButton .= ' href=' . $q . '#' . $modalId . $q;
+                $guestButton .= ' title=' . $q . 'Show guests' . $q;
+                $guestButton .= ' data-bs-toggle=' . $q . 'modal' . $q . '>';
+                $guestButton .= '<span class="icon-users" aria-hidden="true"></span> Show guests</a>';
+                $table->add_item($guestButton);
+
+                $guestList = '<ul>';
+                foreach ($guestsByBooking[$row->id] as $guestName) {
+                    $guestList .= '<li>' . htmlspecialchars($guestName) . '</li>';
+                }
+                $guestList .= '</ul>';
+                $guestModals .= HTMLHelper::_(
+                        'bootstrap.renderModal',
+                        $modalId,
+                        array(
+                            'title' => 'Guests for ' . $row->preferred_name,
+                            'height' => '50%',
+                            'width' => '20%',
+                            'modalWidth' => '50',
+                            'bodyHeight' => '100',
+                            'footer' => '<button class="btn btn-outline-primary" data-bs-dismiss="modal">Close</button>'
+                        ),
+                        $guestList
+                );
+            } else {
+                $table->add_item($row->partner);
+            }
             if ($item->booking1 !== '') {
                 $table->add_item($row->custom1);
             }
@@ -555,6 +588,7 @@ class BookingController extends FormController {
             $table->generate_line();
         }
         $table->generate_table();
+        echo $guestModals;
         echo '<div class="ra-stat-tiles">';
         echo $this->statTile('icon-calendar', 'Provisional', $provisional_bookings . ' bookings, ' . $provisional_places . ' places', 'ra-orange');
         echo $this->statTile('icon-users', 'Confirmed', $confirmed_bookings . ' bookings, ' . $confirmed_places . ' places', 'ra-green');

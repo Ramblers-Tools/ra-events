@@ -25,6 +25,7 @@ $isNew = empty($this->item->id);
 $isCommittee = ($this->item->event_type_id == 1);
 $isHolidayWeekend = ($this->item->event_type_id == 4);
 $isBookable = ($this->item->bookable == 1);
+$isMultiGuest = ($this->item->multi_guest_enabled == 1);
 
 if ($isCommittee) {
     $this->form->setFieldAttribute('details', 'label', 'Agenda');
@@ -107,6 +108,10 @@ if ($isNew) {
             <?php echo $this->form->renderField('booking1_hint'); ?>
             <?php echo $this->form->renderField('booking2'); ?>
             <?php echo $this->form->renderField('booking2_hint'); ?>
+            <?php echo $this->form->renderField('multi_guest_enabled'); ?>
+            <div class="multi-guest-dependent" style="<?php echo $isMultiGuest ? '' : 'display:none;'; ?>">
+                <?php echo $this->form->renderField('max_guests'); ?>
+            </div>
         </div>
         <?php echo HTMLHelper::_('uitab.endTab'); ?>
 
@@ -143,19 +148,24 @@ if ($isNew) {
 
 <script>
     (function () {
-        var radios = document.querySelectorAll('input[name="jform[bookable]"]');
-        var groups = document.querySelectorAll('.bookable-dependent');
+        function wireToggle(fieldName, groupSelector) {
+            var radios = document.querySelectorAll('input[name="jform[' + fieldName + ']"]');
+            var groups = document.querySelectorAll(groupSelector);
 
-        function toggle(showIt) {
-            groups.forEach(function (el) {
-                el.style.display = showIt ? '' : 'none';
+            function toggle(showIt) {
+                groups.forEach(function (el) {
+                    el.style.display = showIt ? '' : 'none';
+                });
+            }
+
+            radios.forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    toggle(this.value === '1');
+                });
             });
         }
 
-        radios.forEach(function (radio) {
-            radio.addEventListener('change', function () {
-                toggle(this.value === '1');
-            });
-        });
+        wireToggle('bookable', '.bookable-dependent');
+        wireToggle('multi_guest_enabled', '.multi-guest-dependent');
     })();
 </script>

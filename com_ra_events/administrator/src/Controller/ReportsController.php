@@ -364,6 +364,7 @@ public function missingProfiles() {
         $sql .= 'ORDER BY e.event_date ';
 //        echo $sql . '<br>';
         $rows = $this->toolsHelper->getRows($sql);
+        $bookingHelper = new BookingHelper;
         $toolsTable = new ToolsTable;
 $toolsTable->add_header('Date,Type,Title,Contact,Places,Participants,Booking');
         foreach ($rows as $row) {
@@ -385,7 +386,10 @@ $toolsTable->add_header('Date,Type,Title,Contact,Places,Participants,Booking');
             $toolsTable->add_item($contact);
             $toolsTable->add_item($row->num_places);
 
-            if (is_null($row->partner)) {
+            $guests = $bookingHelper->guestNames($row->id);
+            if (!empty($guests)) {
+                $toolsTable->add_item($row->member . '/' . implode('/', $guests));
+            } elseif (is_null($row->partner)) {
                 $toolsTable->add_item($row->member);
             } else {
                 $bookings = $row->member;

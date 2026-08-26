@@ -318,6 +318,8 @@ class BookingformModel extends FormModel implements CurrentUserInterface {
     public function save($data) {
         $id = (!empty($data['id'])) ? $data['id'] : (int) $this->getState('booking.id');
         $state = (!empty($data['state'])) ? 1 : 0;
+        $guests = isset($data['_guests']) ? $data['_guests'] : null;
+        unset($data['_guests']);
 //        var_dump($data);
 //        $user = $this->getCurrentUser();
 //        if ($user->id == 0) {
@@ -368,6 +370,9 @@ class BookingformModel extends FormModel implements CurrentUserInterface {
         try {
             if ($table->save($data) === true) {
 //                Factory::getApplication()->enqueueMessage('Model:  table id=' . $table->id, 'info');
+                if ($guests !== null) {
+                    $bookingHelper->saveGuests($table->id, $guests);
+                }
                 Factory::getApplication()->setUserState('com_ra_events.bookingform.id', $table->id);
                 if ($notify_organiser == '1') {
                     $mode = 2;

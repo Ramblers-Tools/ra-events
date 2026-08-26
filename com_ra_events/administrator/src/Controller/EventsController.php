@@ -188,6 +188,8 @@ class EventsController extends AdminController {
         $sql .= 'WHERE b.event_id=' . $event_id;
         $sql .= ' ORDER BY s.seq, p.preferred_name';
 
+        $bookingHelper = new BookingHelper;
+        $guestsByBooking = $bookingHelper->guestNamesForEvent($event_id);
         $rows = $this->toolsHelper->getRows($sql);
         foreach ($rows as $row) {
             if ($row->state == 1) {
@@ -201,7 +203,7 @@ class EventsController extends AdminController {
             $table->add_item(BookingHelper::showState($row->state, $row->is_paid, $event->requires_payment));
             $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
             $table->add_item($row->num_places);
-            $table->add_item($row->partner);
+            $table->add_item(isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner);
             $table->generate_line();
         }
         $table->generate_table();

@@ -58,6 +58,69 @@ class BookingHelper {
         $this->canDo = ContentHelper::getActions('com_ra_events');
     }
 
+    /**
+     * Replace the guest names held for a booking (multi-guest bookings only).
+     *
+     * @param   int    $booking_id
+     * @param   array  $names  Guest names; blank entries are ignored
+     */
+    public function saveGuests($booking_id, $names) {
+        $db = Factory::getDbo();
+        $sql = 'DELETE FROM #__ra_booking_guests WHERE booking_id=' . (int) $booking_id;
+        $this->toolsHelper->executeCommand($sql);
+
+        $date = Factory::getDate('now', Factory::getConfig()->get('offset'))->toSql(true);
+        foreach ($names as $name) {
+            $name = trim($name);
+            if ($name === '') {
+                continue;
+            }
+            $sql = 'INSERT INTO #__ra_booking_guests (booking_id, name, created) VALUES (';
+            $sql .= (int) $booking_id . ', ' . $db->quote($name) . ', ' . $db->quote($date) . ')';
+            $this->toolsHelper->executeCommand($sql);
+        }
+    }
+
+    /**
+     * Guest names for a single booking, or an empty array if it has none
+     * (a plain single-partner booking).
+     *
+     * @param   int  $booking_id
+     * @return  array
+     */
+    public function guestNames($booking_id) {
+        $sql = 'SELECT name FROM #__ra_booking_guests WHERE booking_id=' . (int) $booking_id . ' ORDER BY id';
+        $rows = $this->toolsHelper->getRows($sql);
+        if ($rows === false) {
+            return array();
+        }
+        return array_map(function ($row) {
+            return $row->name;
+        }, $rows);
+    }
+
+    /**
+     * Guest names for every booking on an event, keyed by booking_id - avoids
+     * an N+1 query when listing many bookings at once (e.g. Show Bookings).
+     *
+     * @param   int  $event_id
+     * @return  array  [booking_id => [name, ...]]
+     */
+    public function guestNamesForEvent($event_id) {
+        $sql = 'SELECT g.booking_id, g.name FROM #__ra_booking_guests AS g ';
+        $sql .= 'INNER JOIN #__ra_bookings AS b ON b.id = g.booking_id ';
+        $sql .= 'WHERE b.event_id=' . (int) $event_id . ' ORDER BY g.id';
+        $rows = $this->toolsHelper->getRows($sql);
+        $result = array();
+        if ($rows === false) {
+            return $result;
+        }
+        foreach ($rows as $row) {
+            $result[$row->booking_id][] = $row->name;
+        }
+        return $result;
+    }
+
     public function bookingsForUser($user_id) {
         $sql = 'SELECT COUNT(id) FROM #__ra_bookings WHERE user_id=' . $user_id;
         return $this->toolsHelper->getValue($sql);
@@ -183,7 +246,7 @@ class BookingHelper {
         }
     }
 
-    public function createBooking($event_id, $user_id, $state = 0, $partner = '') {
+    public function createBooking($event_id, $user_id, $state = 0, $partner = '', $guests = array()) {
 //       die('Creating booking');
 // invoked from BookingHelper
         if ($this->current_user_id == 0) {
@@ -206,11 +269,19 @@ class BookingHelper {
             $table = $app->bootComponent('com_ra_events')->getMVCFactory()->createTable('Bookings', 'Administrator');
             $table->event_id = $event_id;
             $table->user_id = $user_id;
-            $table->partner = $partner;
-            if ($partner == '') {
-                $table->num_places = 1;
+            $guests = array_values(array_filter(array_map('trim', $guests), function ($n) {
+                        return $n !== '';
+                    }));
+            if (!empty($guests)) {
+                $table->partner = '';
+                $table->num_places = 1 + count($guests);
             } else {
-                $table->num_places = 2;
+                $table->partner = $partner;
+                if ($partner == '') {
+                    $table->num_places = 1;
+                } else {
+                    $table->num_places = 2;
+                }
             }
             $table->state = $state;
 
@@ -218,6 +289,9 @@ class BookingHelper {
             if (!$result) {
                 $message = 'Unable to create booking record';
                 return false;
+            }
+            if (!empty($guests)) {
+                $this->saveGuests($table->id, $guests);
             }
             if ($state == 1) {
                 $message = 'Confirmed booking created';
@@ -407,7 +481,7 @@ class BookingHelper {
         $sql = 'SELECT booking1, booking2 FROM #__ra_events WHERE id=' . $event_id;
         $event = $this->toolsHelper->getItem($sql);
 
-        $sql = 'SELECT b.partner,b.custom1, b.custom2, p.home_group, u.name, u.email ';
+        $sql = 'SELECT b.id, b.partner,b.custom1, b.custom2, p.home_group, u.name, u.email ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id ';
         $sql .= 'INNER JOIN #__users AS u ON u.id = b.user_id  ';
@@ -415,6 +489,7 @@ class BookingHelper {
         $sql .= 'WHERE b.event_id=' . $event_id;
         $sql .= ' ORDER BY e.group_code,u.name';
         $rows = $this->toolsHelper->getRows($sql);
+        $guestsByBooking = $this->guestNamesForEvent($event_id);
         $title = 'Group,Name,Email,Extra,Special';
         if ($event->booking1 !== '') {
             $title .= ',' . $event->booking1;
@@ -426,10 +501,11 @@ class BookingHelper {
             $toolsTable = new ToolsTable();
             $toolsTable->add_header($title);
             foreach ($rows as $row) {
+                $guests = isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner;
                 $toolsTable->add_item($row->home_group);
                 $toolsTable->add_item($row->name);
                 $toolsTable->add_item($row->email);
-                $toolsTable->add_item($row->partner);
+                $toolsTable->add_item($guests);
                 $toolsTable->add_item($row->special_request);
                 if ($event->booking1 !== '') {
                     $toolsTable->add_item($row->custom1);
@@ -443,10 +519,11 @@ class BookingHelper {
         } else {
             echo $title . '<br>';
             foreach ($rows as $row) {
+                $guests = isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner;
                 echo $row->home_group . ',';
                 echo $row->name . ',';
                 echo $row->email . ',';
-                echo $row->partner;
+                echo $guests;
                 if ($event->booking1 !== '') {
 //$table->add_item($row->custom1);
                     echo ',' . $row->custom1;
@@ -509,8 +586,11 @@ class BookingHelper {
         $details .= '<b>Date:</b> ' . HTMLHelper::_('date', $item->event_date, 'd M y') . '<br>';
         $details .= '<h3>Your booking details:</h3>';
         $details .= '<b>Number of bookings:</b> ';
+        $guests = $this->guestNames($booking_id);
         if ($item->num_places == 1) {
             $details .= '1';
+        } elseif (!empty($guests)) {
+            $details .= $item->num_places . ' - you plus ' . implode(', ', $guests);
         } else {
             $details .= '2 - you plus ' . $item->partner;
         }
@@ -786,7 +866,7 @@ class BookingHelper {
         $body .= ' on ' . HTMLHelper::_('date', $item->created, 'd M y') . '<br><br>';
         $body .= 'The list of bookings is now:<br>';
 //
-        $sql = 'SELECT p.preferred_name, s.title, b.state, b.created, ';
+        $sql = 'SELECT b.id, p.preferred_name, s.title, b.state, b.created, ';
         $sql .= 'b.num_places, b.partner, b.special_request, b.custom1, b.custom2 ';
         $sql .= 'FROM #__ra_profiles AS p ';
         $sql .= 'INNER JOIN #__ra_bookings AS b ON b.user_id=p.id ';
@@ -795,6 +875,7 @@ class BookingHelper {
         $sql .= ' AND b.state != -2';
         $sql .= ' ORDER BY b.created';
         $rows = $this->toolsHelper->getRows($sql);
+        $guestsByBooking = $this->guestNamesForEvent($item->event_id);
 
         $body .= '<table>';
         $body .= '<tr><th>Date</th><th>Name</th><th>Status</th><th>Places</th><th>Details</th></tr>';
@@ -814,7 +895,8 @@ class BookingHelper {
             $body .= '<td>' . $row->preferred_name . '</td>';
             $body .= '<td>' . $row->title . '</td>';
             $body .= '<td>' . $row->num_places . '</td>';
-            $details = $row->partner . ', ' . $row->special_request;
+            $guestNames = isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner;
+            $details = $guestNames . ', ' . $row->special_request;
             if ($item->booking1 !== '') {
                 $details .= ',' . $row->custom1;
             }

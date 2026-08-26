@@ -402,13 +402,25 @@ class Com_Ra_eventsInstallerScript {
 // If we return false, no message is displayed on the console, just "Custom installation failure"
 //           return false;
         }
-        $this->version_required = '2.10.6';
+        $this->version_required = '2.12.0';
         if (version_compare($this->current_version, $this->version_required, 'ge')) {
             echo 'Current version is ' . $this->current_version . ', no additional processing required</p>';
             return true;
         } else {
             echo '<p>Version is currently ' . $this->current_version . ', ';
             echo 'Requires version >= ' . $this->version_required . '</p>';
+        }
+        if (version_compare($this->current_version, '2.11.0', 'le')) {
+            $this->checkColumn('ra_events', 'multi_guest_enabled', 'A', 'INT DEFAULT "0" AFTER waiting_list_enabled; ');
+            $this->checkColumn('ra_events', 'max_guests', 'A', 'INT DEFAULT "1" AFTER multi_guest_enabled; ');
+            $sql = 'CREATE TABLE IF NOT EXISTS #__ra_booking_guests (';
+            $sql .= '`id` INT UNSIGNED NOT NULL AUTO_INCREMENT, ';
+            $sql .= '`booking_id` INT NOT NULL, ';
+            $sql .= '`name` VARCHAR(100) NOT NULL, ';
+            $sql .= '`created` DATETIME NOT NULL, ';
+            $sql .= 'PRIMARY KEY (`id`), INDEX idx_booking_id(booking_id)';
+            $sql .= ') DEFAULT COLLATE=utf8mb4_unicode_ci;';
+            $this->executeCommand($sql);
         }
         if (version_compare($this->current_version, '2.10.6', 'le')) {
             $this->checkColumn('ra_event_types', 'description', 'U', 'VARCHAR(100) NOT NULL; ');
