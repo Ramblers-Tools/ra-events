@@ -23,6 +23,7 @@ use \Joomla\CMS\Layout\LayoutHelper;
 use \Joomla\CMS\Session\Session;
 use \Joomla\CMS\User\UserFactoryInterface;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
+use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 HTMLHelper::_('bootstrap.tooltip');
 HTMLHelper::_('behavior.multiselect');
@@ -99,10 +100,14 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
                     // See if this user is currently booked
                     $check_visible = false;
                     $target = 'index.php?option=com_ra_events&task=profiles.';
+                    $overCapacity = false;
                     if (is_null($item->state) || $item->state == -2) {
                         // no subscription record found, or a previously cancelled booking - treat as unbooked
                         if ($this->is_full && $this->event->waiting_list_enabled) {
                             $label = 'Add to wait list';
+                        } elseif ($this->is_full) {
+                            $label = 'Book (event full)';
+                            $overCapacity = true;
                         } else {
                             $label = 'Book';
                         }
@@ -158,6 +163,11 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
                         if ($item->requireReset == 0) {
                             if (($organiser_id == $item->id)) {
                                 echo '<b>Organiser</b>';
+                            } elseif ($overCapacity) {
+                                $class = ToolsHelper::lookupColourCode($colour, 'B');
+                                $message = 'This event is full and the waiting list is not enabled. Book anyway?';
+                                echo '<a class="' . $class . '" href="' . $target . '" ';
+                                echo 'onclick="return confirm(\'' . $message . '\');" target="_self">' . $label . '</a>';
                             } else {
                                 echo $this->toolsHelper->buildButton($target, $label, false, $colour);
                             }
@@ -180,9 +190,20 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
 </form>
 <div class="controls">
      <?php if ($this->multibook) : ?>
-    <button class="btn btn-primary" onclick="Joomla.submitform('profiles.multiBook', document.getElementById('adminForm'));">
+        <?php
+        $multibookOnclick = "Joomla.submitform('profiles.multiBook', document.getElementById('adminForm'));";
+        if ($this->is_full && $this->event->waiting_list_enabled) {
+            $multibookLabel = 'Add selected to wait list';
+        } elseif ($this->is_full) {
+            $multibookLabel = 'Multi-book (event full)';
+            $multibookOnclick = "if (confirm('This event is full and the waiting list is not enabled. Book anyway?')) { " . $multibookOnclick . " } return false;";
+        } else {
+            $multibookLabel = 'Multi-book';
+        }
+        ?>
+    <button class="btn btn-primary" onclick="<?php echo $multibookOnclick; ?>">
         <span class="fas fa-check" aria-hidden="true"></span>
-        <?php echo ($this->is_full && $this->event->waiting_list_enabled) ? 'Add selected to wait list' : 'Multi-book'; ?>
+        <?php echo $multibookLabel; ?>
     </button>
     <?php endif; ?>
     <a class="btn btn-danger"
