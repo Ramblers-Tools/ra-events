@@ -522,8 +522,9 @@ class BookingController extends FormController {
                 $guestButton = '<a class=' . $q . 'ra-icon-btn ra-dark' . $q;
                 $guestButton .= ' href=' . $q . '#' . $modalId . $q;
                 $guestButton .= ' title=' . $q . 'Show guests' . $q;
-                $guestButton .= ' data-bs-toggle=' . $q . 'modal' . $q . '>';
-                $guestButton .= '<span class="icon-users" aria-hidden="true"></span> Show guests</a>';
+                $guestButton .= ' data-bs-toggle=' . $q . 'modal' . $q;
+                $guestButton .= ' target=' . $q . '_self' . $q . '>';
+                $guestButton .= '<span class="icon-users" aria-hidden="true"></span></a>';
                 $table->add_item($guestButton);
 
                 $guestList = '<ul>';

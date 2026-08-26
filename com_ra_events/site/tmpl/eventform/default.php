@@ -104,6 +104,10 @@ if ($isNew) {
         <div class="bookable-dependent" style="<?php echo $isBookable ? '' : 'display:none;'; ?>">
             <?php echo $this->form->renderField('requires_payment'); ?>
             <?php echo $this->form->renderField('max_bookings'); ?>
+            <?php echo $this->form->renderField('multi_guest_enabled'); ?>
+            <div class="multi-guest-dependent" style="<?php echo $isMultiGuest ? '' : 'display:none;'; ?>">
+                <?php echo $this->form->renderField('max_guests'); ?>
+            </div>
             <?php echo $this->form->renderField('waiting_list_enabled'); ?>
             <?php echo $this->form->renderField('notify_organiser'); ?>
             <?php echo $this->form->renderField('booking_info'); ?>
@@ -111,10 +115,6 @@ if ($isNew) {
             <?php echo $this->form->renderField('booking1_hint'); ?>
             <?php echo $this->form->renderField('booking2'); ?>
             <?php echo $this->form->renderField('booking2_hint'); ?>
-            <?php echo $this->form->renderField('multi_guest_enabled'); ?>
-            <div class="multi-guest-dependent" style="<?php echo $isMultiGuest ? '' : 'display:none;'; ?>">
-                <?php echo $this->form->renderField('max_guests'); ?>
-            </div>
         </div>
         <?php echo HTMLHelper::_('uitab.endTab'); ?>
 
