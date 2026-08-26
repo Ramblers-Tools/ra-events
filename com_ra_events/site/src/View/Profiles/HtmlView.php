@@ -68,9 +68,13 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         $active_places = $this->toolsHelper->getValue($sql);
         $active_places = is_null($active_places) ? 0 : $active_places;
         $this->is_full = ($active_places >= $this->event->max_bookings);
-        if ((is_null($this->event->booking1) AND is_null($this->event->booking2)) 
-            OR (($this->event->booking1 == '') AND ($this->event->booking2 == ''))) {
-            $this->multibook = true;            
+        $noCustomFields = (is_null($this->event->booking1) AND is_null($this->event->booking2))
+            OR (($this->event->booking1 == '') AND ($this->event->booking2 == ''));
+        // Bulk multi-book has no way to collect per-user data, so it's disabled whenever
+        // a booking might need it - custom fields, or (now) guest names for multi-guest
+        // events. Organisers book those users individually instead, via the booking form.
+        if ($noCustomFields AND ($this->event->multi_guest_enabled == 0)) {
+            $this->multibook = true;
         } else {
             $this->multibook = false;
         }

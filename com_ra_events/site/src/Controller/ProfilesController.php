@@ -94,14 +94,14 @@ class ProfilesController extends FormController {
         $user_id = $this->app->input->getInt('user_id', '0');
         $menu_id = $this->app->input->getInt('Itemid', '0');
         // Validate input
-        $sql = 'SELECT bookable, contact_id, booking1, booking2 FROM #__ra_events WHERE id=' . $event_id;
+        $sql = 'SELECT bookable, contact_id, booking1, booking2, multi_guest_enabled FROM #__ra_events WHERE id=' . $event_id;
         $item = $this->toolsHelper->getItem($sql);
         if ($item->bookable == 0) {
             throw new \Exception('This event cannot be booked', 403);
         }
         $is_waitlist = $this->isWaitlistNeeded($event_id);
-        if (($item->booking1 == '') AND ($item->booking2 == '')) {
-            // No custom fields
+        if (($item->booking1 == '') AND ($item->booking2 == '') AND ($item->multi_guest_enabled == 0)) {
+            // No custom fields, and no guests to select - book directly
             if ($is_waitlist) {
                 $this->bookingHelper->createBooking($event_id, $user_id, -1);
             } else {

@@ -33,6 +33,7 @@
     26/08/26 RH version 2.12.3 - fix Show Guests button styling, move Multi-guest booking field under Max Bookings on the event edit form
     26/08/26 RH version 2.12.4 - add Show Guests button to My Bookings page
     26/08/26 RH version 2.12.5 - booking form: hide the Single/Two persons choice when guest bookings are off, book single person directly
+    26/08/26 RH version 2.13.0 - organiser Select Users: route manual "Book" through the booking form (instead of an instant zero-guest booking) when the event has multi-guest booking on, so guests can be selected up front; hide bulk Multi-book for such events since it can't collect per-user guest names, matching the existing custom-fields behaviour
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -43,7 +44,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.12.5</version>
+    <version>2.13.0</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	
