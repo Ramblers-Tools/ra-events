@@ -42,7 +42,7 @@ echo $toolsHelper->showEvents($this->user->id);
 
 // Find events on which the user has the booked
 $sql = 'SELECT e.id, e.group_code, e.event_time, e.event_date, e.title, e.bookable, ';
-$sql .= 'e.max_bookings, e.requires_payment, t.description, b.state, b.is_paid ';
+$sql .= 'e.max_bookings, e.requires_payment, t.description, b.id AS booking_id, b.state, b.is_paid ';
 $sql .= 'FROM #__ra_events AS e ';
 $sql .= 'INNER JOIN #__ra_bookings AS b ON b.event_id = e.id ';
 $sql .= 'INNER JOIN #__ra_event_types AS t ON t.id = e.event_type_id ';
@@ -61,7 +61,8 @@ if ($rows === false) {
 } else {
     echo '<h2>Events you have booked on</h2>';
     $toolsTable = new ToolsTable;
-    $toolsTable->add_header('Group,Date,Event,Type,Status');
+    $toolsTable->add_header('Group,Date,Event,Type,Status,Guests');
+    $guestModals = '';
     foreach ($rows as $row) {
         $toolsTable->add_item($row->group_code);
         $date = $row->event_time . ' ' . HTMLHelper::_('date', $row->event_date, 'D d/m/y');
@@ -72,9 +73,44 @@ if ($rows === false) {
 //        $toolsTable->add_item($row->max_bookings);
 // $bookable, $event_id, $callback, $buttons = true
         $toolsTable->add_item(BookingHelper::showState($row->state, $row->is_paid, $row->requires_payment, true));
+
+        $guests = $bookingHelper->guestNames($row->booking_id);
+        if (!empty($guests)) {
+            $modalId = 'myGuestsModal' . $row->booking_id;
+            $q = chr(34);
+            $guestButton = '<a class=' . $q . 'ra-icon-btn ra-dark' . $q;
+            $guestButton .= ' href=' . $q . '#' . $modalId . $q;
+            $guestButton .= ' title=' . $q . 'Show guests' . $q;
+            $guestButton .= ' data-bs-toggle=' . $q . 'modal' . $q;
+            $guestButton .= ' target=' . $q . '_self' . $q . '>';
+            $guestButton .= '<span class="icon-users" aria-hidden="true"></span></a>';
+            $toolsTable->add_item($guestButton);
+
+            $guestList = '<ul>';
+            foreach ($guests as $guestName) {
+                $guestList .= '<li>' . htmlspecialchars($guestName) . '</li>';
+            }
+            $guestList .= '</ul>';
+            $guestModals .= HTMLHelper::_(
+                    'bootstrap.renderModal',
+                    $modalId,
+                    array(
+                        'title' => 'Your guests for ' . $row->title,
+                        'height' => '50%',
+                        'width' => '20%',
+                        'modalWidth' => '50',
+                        'bodyHeight' => '100',
+                        'footer' => '<button class="btn btn-outline-primary" data-bs-dismiss="modal">Close</button>'
+                    ),
+                    $guestList
+            );
+        } else {
+            $toolsTable->add_item('');
+        }
         $toolsTable->generate_line();
     }
     $toolsTable->generate_table();
+    echo $guestModals;
     if (count($rows) > 1) {
         echo count($rows) . ' Bookings<br>';
     }

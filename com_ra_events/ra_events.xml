@@ -31,6 +31,7 @@
     26/08/26 RH version 2.12.1 - require Last Date for Holiday/weekend events on the front-end event form (fix "Incorrect date value" save error)
     26/08/26 RH version 2.12.2 - Select Users: warn when booking/multi-booking a full event with waiting list disabled, instead of silently showing "Book"
     26/08/26 RH version 2.12.3 - fix Show Guests button styling, move Multi-guest booking field under Max Bookings on the event edit form
+    26/08/26 RH version 2.12.4 - add Show Guests button to My Bookings page
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -41,7 +42,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.12.3</version>
+    <version>2.12.4</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	
