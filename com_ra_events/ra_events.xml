@@ -37,6 +37,7 @@
     26/08/26 RH version 2.13.1 - booking form: default state to Confirmed (not Provisional) when the organiser is adding someone directly, and run the proper confirm step (confirmed_by/date, correct email) instead of the generic provisional-worded acknowledgement
     26/08/26 RH version 2.14.0 - self-service "Manage My Booking": members can add/remove/edit guests while Provisional (edit names only once Confirmed), and cancel their own booking - or, once Confirmed, send a cancellation request to the organiser instead
     26/08/26 RH version 2.14.1 - fix "Call to a member function getItem() on false" on Manage My Booking save/cancel - drop the unreliable Joomla Model layer, load the booking directly via BookingHelper::getOwnedBooking()
+    26/08/26 RH version 2.14.2 - fix organiser "Add to wait list" wrongly blocked with "Not enough places left for that many guests" on multi-guest events - the guest-count capacity check now skips itself for a deliberate waitlist booking
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -47,7 +48,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.14.1</version>
+    <version>2.14.2</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	

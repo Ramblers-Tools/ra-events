@@ -231,6 +231,11 @@ class BookingformController extends FormController {
                     })) < $guestCount) {
                 $this->app->enqueueMessage('All guest names must be given', 'error');
                 $error = true;
+            } elseif ($this->app->getUserState('com_ra_events.bookingform.waitlist', 0)) {
+                // This booking is deliberately going onto the waiting list (organiser
+                // used "Add to wait list", or the event was already full when the
+                // booker started) - it's meant to exceed max_bookings, so the capacity
+                // check below doesn't apply here.
             } else {
                 // Server-side capacity enforcement - the form only offers options that
                 // fit at the time it was rendered, but re-check here too since capacity
