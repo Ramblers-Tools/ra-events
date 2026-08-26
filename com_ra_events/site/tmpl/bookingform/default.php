@@ -123,8 +123,18 @@ echo $this->intro;
                 <input type="hidden" name="jform[partner]" value="" />
                 <?php
             } else {
-                echo $this->form->renderField('num_places');
-                echo $this->form->renderField('partner');
+                // Guest bookings are off for this event - just book a single person.
+                // Preserve the old radio/text fields only when editing a booking that
+                // already has a second person (e.g. made before multi-guest booking
+                // existed), so editing it doesn't silently drop their name.
+                $existingNumPlaces = ($this->item->id > 0) ? (int) $this->item->num_places : 1;
+                if ($existingNumPlaces > 1) {
+                    echo $this->form->renderField('num_places');
+                    echo $this->form->renderField('partner');
+                } else {
+                    echo '<input type="hidden" name="jform[num_places]" value="1" />';
+                    echo '<input type="hidden" name="jform[partner]" value="" />';
+                }
             }
             ?>
             <?php
