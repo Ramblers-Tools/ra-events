@@ -262,6 +262,9 @@ class EventformModel extends FormModel implements CurrentUserInterface {
         // invalid date. Drop it entirely for other types rather than posting ''.
         if ($data['event_type_id'] != 4 && array_key_exists('event_date_end', $data) && $data['event_date_end'] === '') {
             unset($data['event_date_end']);
+        } elseif ($data['event_type_id'] == 4 && empty($data['event_date_end'])) {
+            Factory::getApplication()->enqueueMessage('Last date is required for a Holiday/weekend event', 'error');
+            return false;
         }
 
         $time = isset($data['event_time']) ? trim($data['event_time']) : '';

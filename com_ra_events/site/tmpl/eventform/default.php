@@ -63,7 +63,10 @@ if ($isNew) {
         <?php echo HTMLHelper::_('uitab.addTab', 'eventformTab', 'eventform-common', 'Common fields'); ?>
         <?php echo $this->form->renderField('event_date'); ?>
         <?php if ($isHolidayWeekend): ?>
-            <?php echo $this->form->renderField('event_date_end'); ?>
+            <?php
+            $this->form->setFieldAttribute('event_date_end', 'required', 'true');
+            echo $this->form->renderField('event_date_end');
+            ?>
         <?php endif; ?>
         <?php // When not a Holiday/weekend, event_date_end is simply not posted -
               // EventTable::bind() has no null-handling for this column (unlike
