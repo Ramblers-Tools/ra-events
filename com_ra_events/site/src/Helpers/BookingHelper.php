@@ -126,6 +126,38 @@ class BookingHelper {
         return $this->toolsHelper->getValue($sql);
     }
 
+    /**
+     * Load a booking (joined with its event) for the self-service Manage My
+     * Booking feature, checking that the current user owns it. Single place
+     * ownership is enforced for that feature - every entry point (the GET
+     * view and both POST tasks) must call this rather than trusting a posted
+     * event_id/user_id/state.
+     *
+     * @param   int  $booking_id
+     * @return  object
+     * @throws  \Exception
+     */
+    public function getOwnedBooking($booking_id) {
+        $sql = 'SELECT b.id, b.event_id, b.user_id, b.num_places, b.partner, b.state, ';
+        $sql .= 'e.title, e.event_date, e.multi_guest_enabled, e.max_guests, e.max_bookings ';
+        $sql .= 'FROM #__ra_bookings AS b ';
+        $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id ';
+        $sql .= 'WHERE b.id=' . (int) $booking_id;
+        $item = $this->toolsHelper->getItem($sql);
+
+        if (is_null($item)) {
+            throw new \Exception('Booking not found', 404);
+        }
+        if ($this->current_user_id == 0) {
+            throw new \Exception('You must be logged in to manage a booking', 403);
+        }
+        if ((int) $item->user_id !== (int) $this->current_user_id) {
+            throw new \Exception('You are not authorised to manage this booking', 403);
+        }
+
+        return $item;
+    }
+
     public function cancelBooking($id, $user_id) {
         if ($this->current_user_id == 0) {
             throw new \Exception('You must be logged in to cancel a booking', 403);

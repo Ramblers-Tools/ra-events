@@ -47,7 +47,8 @@ class HtmlView extends BaseHtmlView {
         $this->toolsHelper = new ToolsHelper;
         $bookingHelper = new BookingHelper;
 
-        $this->item = $this->get('Item');
+        $id = $app->input->getInt('id', 0);
+        $this->item = $bookingHelper->getOwnedBooking($id);
 
         $this->isMultiGuest = ($this->item->multi_guest_enabled == 1);
         $this->canEditGuestCount = in_array((int) $this->item->state, array(0, -1));

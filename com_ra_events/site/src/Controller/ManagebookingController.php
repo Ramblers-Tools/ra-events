@@ -22,7 +22,7 @@ use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 /**
  * Self-service "Manage My Booking" controller.
  *
- * Every task here reloads the booking fresh via ManagebookingModel::getItem(),
+ * Every task here reloads the booking fresh via BookingHelper::getOwnedBooking(),
  * which throws if the current user does not own it - never trust posted
  * event_id/user_id/state.
  *
@@ -47,11 +47,9 @@ class ManagebookingController extends BaseController {
         $this->checkToken();
 
         $id = $this->app->input->getInt('id', 0);
-        $model = $this->getModel('Managebooking', 'Site');
-        $item = $model->getItem($id);
-
         $toolsHelper = new ToolsHelper;
         $bookingHelper = new BookingHelper;
+        $item = $bookingHelper->getOwnedBooking($id);
         $canEditGuestCount = in_array((int) $item->state, array(0, -1));
 
         if ($item->multi_guest_enabled == 1) {
@@ -133,10 +131,8 @@ class ManagebookingController extends BaseController {
         $this->checkToken();
 
         $id = $this->app->input->getInt('id', 0);
-        $model = $this->getModel('Managebooking', 'Site');
-        $item = $model->getItem($id);
-
         $bookingHelper = new BookingHelper;
+        $item = $bookingHelper->getOwnedBooking($id);
         $menu_id = $this->app->input->getInt('Itemid', 0);
         $target = 'index.php?option=com_ra_events&view=event&id=' . $item->event_id . '&Itemid=' . $menu_id;
 
