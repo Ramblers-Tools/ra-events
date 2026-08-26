@@ -26,6 +26,7 @@
     25/08/26 RH version 2.10.6 - stack event type choices vertically on create-event step 1
     25/08/26 RH version 2.10.7 - widen #__ra_event_types.description from varchar(20) to varchar(100)
     25/08/26 RH version 2.10.8 - front-end event form: label the Details field "Agenda" for Committee meetings
+    26/08/26 RH version 2.11.0 - front-end event form: group fields into uitab tabs, mirroring the admin edit form
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -36,7 +37,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.10.8</version>
+    <version>2.11.0</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	

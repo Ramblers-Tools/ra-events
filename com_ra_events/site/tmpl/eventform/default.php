@@ -8,6 +8,7 @@
  * 25/08/26 RH explicit field list: PHP conditionals for the (fixed) event
  *              type, live JS toggle for the (user-editable) bookable group -
  *              the site theme doesn't reliably run Joomla's core "showon" JS
+ * 26/08/26 RH grouped fields into uitab tabs, mirroring the admin edit form
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -24,6 +25,11 @@ $isNew = empty($this->item->id);
 $isCommittee = ($this->item->event_type_id == 1);
 $isHolidayWeekend = ($this->item->event_type_id == 4);
 $isBookable = ($this->item->bookable == 1);
+
+if ($isCommittee) {
+    $this->form->setFieldAttribute('details', 'label', 'Agenda');
+    $this->form->setFieldAttribute('details', 'description', 'Agenda for the meeting');
+}
 
 echo '<h2>' . ($isNew ? 'Create Event' : 'Edit Event') . '</h2>';
 
@@ -51,6 +57,9 @@ if ($isNew) {
         <?php echo $this->form->getInput('version_note'); ?>
         <?php echo $this->form->getInput('email'); ?>
 
+        <?php echo HTMLHelper::_('uitab.startTabSet', 'eventformTab', array('active' => 'eventform-common')); ?>
+
+        <?php echo HTMLHelper::_('uitab.addTab', 'eventformTab', 'eventform-common', 'Common fields'); ?>
         <?php echo $this->form->renderField('event_date'); ?>
         <?php if ($isHolidayWeekend): ?>
             <?php echo $this->form->renderField('event_date_end'); ?>
@@ -60,33 +69,34 @@ if ($isNew) {
               // most others), so posting '' triggers an "Incorrect date value"
               // DB error. Omitting the key entirely leaves the loaded/NULL value untouched. ?>
         <?php echo $this->form->renderField('event_time'); ?>
-
         <?php echo $this->form->renderField('title'); ?>
         <?php echo $this->form->renderField('group_code'); ?>
         <?php echo $this->form->renderField('location'); ?>
-        <?php
-        if ($isCommittee) {
-            $this->form->setFieldAttribute('details', 'label', 'Agenda');
-            $this->form->setFieldAttribute('details', 'description', 'Agenda for the meeting');
-        }
-        echo $this->form->renderField('details');
-        ?>
+        <?php echo $this->form->renderField('url'); ?>
+        <?php echo $this->form->renderField('url_description'); ?>
+        <?php echo $this->form->renderField('attachments'); ?>
+        <?php echo $this->form->renderField('attachment_description'); ?>
+        <?php echo HTMLHelper::_('uitab.endTab'); ?>
+
+        <?php echo HTMLHelper::_('uitab.addTab', 'eventformTab', 'eventform-details', $isCommittee ? 'Agenda' : 'Details'); ?>
+        <?php echo $this->form->renderField('details'); ?>
+        <?php echo HTMLHelper::_('uitab.endTab'); ?>
 
         <?php if ($isCommittee): ?>
+            <?php echo HTMLHelper::_('uitab.addTab', 'eventformTab', 'eventform-reports', 'Reports'); ?>
             <?php echo $this->form->renderField('reports'); ?>
+            <?php echo HTMLHelper::_('uitab.endTab'); ?>
+
+            <?php echo HTMLHelper::_('uitab.addTab', 'eventformTab', 'eventform-minutes', 'Minutes'); ?>
             <?php echo $this->form->renderField('minutes'); ?>
+            <?php echo HTMLHelper::_('uitab.endTab'); ?>
         <?php else: ?>
             <input type="hidden" name="jform[reports]" value="<?php echo htmlspecialchars((string) $this->item->reports); ?>" />
             <input type="hidden" name="jform[minutes]" value="<?php echo htmlspecialchars((string) $this->item->minutes); ?>" />
         <?php endif; ?>
 
-        <?php echo $this->form->renderField('url'); ?>
-        <?php echo $this->form->renderField('url_description'); ?>
-        <?php echo $this->form->renderField('attachments'); ?>
-        <?php echo $this->form->renderField('attachment_description'); ?>
-
+        <?php echo HTMLHelper::_('uitab.addTab', 'eventformTab', 'eventform-booking', 'Booking'); ?>
         <?php echo $this->form->renderField('bookable'); ?>
-
         <div class="bookable-dependent" style="<?php echo $isBookable ? '' : 'display:none;'; ?>">
             <?php echo $this->form->renderField('requires_payment'); ?>
             <?php echo $this->form->renderField('max_bookings'); ?>
@@ -98,10 +108,15 @@ if ($isNew) {
             <?php echo $this->form->renderField('booking2'); ?>
             <?php echo $this->form->renderField('booking2_hint'); ?>
         </div>
+        <?php echo HTMLHelper::_('uitab.endTab'); ?>
 
+        <?php echo HTMLHelper::_('uitab.addTab', 'eventformTab', 'eventform-publishing', 'Publishing'); ?>
         <?php echo $this->form->renderField('shareable'); ?>
         <?php echo $this->form->renderField('share_date'); ?>
         <?php echo $this->form->renderField('publication_date'); ?>
+        <?php echo HTMLHelper::_('uitab.endTab'); ?>
+
+        <?php echo HTMLHelper::_('uitab.endTabSet'); ?>
 
         <div class="control-group">
             <div class="controls">
