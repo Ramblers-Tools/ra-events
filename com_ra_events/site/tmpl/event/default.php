@@ -40,6 +40,7 @@ $wa->registerAndUseStyle('ramblers', 'com_ra_tools/ramblers.css');
 // $mode will be blank if invoked from Social Events, or from the first column of List committee Meetings,
 // but will be (A)genda, (R)eports or (M)inutes if invoked from specific columns of the List committee Meetings
 $mode = $app->input->getCmd('mode', '');
+$cancelRequested = ($app->input->getInt('cancelRequested', 0) == 1);
 
 if ($this->item->emails_outstanding > 0) {  
      $app->enqueueMessage('Mailshot waiting to be sent', 'info');
@@ -212,4 +213,28 @@ if ($this->layout == '') {
 echo $bookingHelper->showBookings($this->item->bookable, $this->item->id, $this->menu_id, $callback);
 echo '</div>';                   // End of Colour div
 //echo $this->toolsHelper->backButton($back);
+
+if ($cancelRequested) {
+    $modalBody = '<p>As you are now confirmed, your cancellation request has been sent ';
+    $modalBody .= 'to the organiser. They will be in touch to discuss it further.</p>';
+    echo HTMLHelper::_(
+            'bootstrap.renderModal',
+            'cancelRequestedModal',
+            array(
+                'title' => 'Cancellation request sent',
+                'height' => '50%',
+                'width' => '20%',
+                'modalWidth' => '50',
+                'bodyHeight' => '100',
+                'footer' => '<button class="btn btn-outline-primary" data-bs-dismiss="modal">Close</button>'
+            ),
+            $modalBody
+    );
+    echo '<script>';
+    echo 'document.addEventListener("DOMContentLoaded", function () {';
+    echo 'var modalEl = document.getElementById("cancelRequestedModal");';
+    echo 'if (modalEl && window.bootstrap) { new bootstrap.Modal(modalEl).show(); }';
+    echo '});';
+    echo '</script>';
+}
 

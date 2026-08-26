@@ -61,7 +61,7 @@ if ($rows === false) {
 } else {
     echo '<h2>Events you have booked on</h2>';
     $toolsTable = new ToolsTable;
-    $toolsTable->add_header('Group,Date,Event,Type,Status,Guests');
+    $toolsTable->add_header('Group,Date,Event,Type,Status,Guests,Manage');
     $guestModals = '';
     foreach ($rows as $row) {
         $toolsTable->add_item($row->group_code);
@@ -104,6 +104,14 @@ if ($rows === false) {
                     ),
                     $guestList
             );
+        } else {
+            $toolsTable->add_item('');
+        }
+
+        if ($row->state != -2) {
+            $manage_link = 'index.php?option=com_ra_events&view=managebooking&id=' . $row->booking_id;
+            $manage_link .= '&event_id=' . $row->id . '&Itemid=' . $this->menu_id;
+            $toolsTable->add_item($toolsHelper->buildButton($manage_link, 'Manage My Booking', false, 'grey'));
         } else {
             $toolsTable->add_item('');
         }

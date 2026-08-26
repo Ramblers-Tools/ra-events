@@ -791,6 +791,59 @@ class BookingHelper {
         return true;
     }
 
+    /**
+     * Notify the organiser that a member has cancelled their own Provisional/
+     * Waitlisted booking via self-service Manage My Booking.
+     *
+     * @param   int  $booking_id
+     */
+    public function notifyOrganiserOfSelfCancellation($booking_id) {
+        $this->sendOrganiserSelfServiceEmail($booking_id, 'cancelled');
+    }
+
+    /**
+     * Notify the organiser that a member wishes to cancel their Confirmed
+     * booking. The booking itself is left untouched - the organiser follows
+     * up with the member and cancels it themselves from Show Bookings.
+     *
+     * @param   int  $booking_id
+     */
+    public function notifyOrganiserOfCancelRequest($booking_id) {
+        $this->sendOrganiserSelfServiceEmail($booking_id, 'cancel_requested');
+    }
+
+    private function sendOrganiserSelfServiceEmail($booking_id, $kind) {
+        $sql = 'SELECT e.id AS event_id, e.title, c.name AS organiser, uOrg.email AS organiser_email, ';
+        $sql .= 'pBooker.preferred_name AS booker_name ';
+        $sql .= 'FROM #__ra_bookings AS b ';
+        $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id ';
+        $sql .= 'INNER JOIN #__contact_details AS c ON c.id = e.contact_id ';
+        $sql .= 'INNER JOIN #__users AS uOrg ON uOrg.id = c.user_id ';
+        $sql .= 'INNER JOIN #__ra_profiles AS pBooker ON pBooker.id = b.user_id ';
+        $sql .= 'WHERE b.id=' . (int) $booking_id;
+        $item = $this->toolsHelper->getItem($sql);
+        if (is_null($item)) {
+            return false;
+        }
+
+        if ($kind == 'cancelled') {
+            $subject = $item->booker_name . ' has cancelled their booking for ' . $item->title;
+            $intro = $item->booker_name . ' has cancelled their booking.';
+        } else {
+            $subject = $item->booker_name . ' wishes to cancel their confirmed booking for ' . $item->title;
+            $intro = $item->booker_name . ' has a confirmed booking and would like to cancel it. ';
+            $intro .= 'Please contact them to discuss, then cancel their booking from Show Bookings if agreed.';
+        }
+
+        $eventHelper = new EventsHelper;
+        $body = $eventHelper->emailHeader($item->event_id, '9');
+        $body .= 'Dear ' . $item->organiser . ',<br>';
+        $body .= $intro . '<br>';
+        $body .= $this->getBookingDetails($booking_id);
+        $this->toolsHelper->sendEmail($item->organiser_email, $item->organiser_email, $subject, $body);
+        return true;
+    }
+
     public function sendAcknowledgement($booking_id, $mode) {
         // Always sends acknowledgement to the booker
         // If mode =2, also notifies the organiser
@@ -1092,7 +1145,7 @@ class BookingHelper {
         $details .= '<br><br>';
 
 // See if current user has already booked
-        $sql = 'SELECT s.title, b.created, b.created_by, b.confirmed, b.confirmed_by,  ';
+        $sql = 'SELECT b.id, s.title, b.created, b.created_by, b.confirmed, b.confirmed_by,  ';
         $sql .= 'b.cancelled, b.cancelled_by, b.state ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_event_states AS s ON s.id = b.state  ';
@@ -1136,7 +1189,10 @@ class BookingHelper {
                 $details .= $booking->created;
             }
 
-            $details .= '<br>If you have changed your mind, please contact the organiser<br>';
+            $details .= '<br>';
+            $manageTarget = $target . '&view=managebooking&id=' . $booking->id . '&event_id=' . $event_id;
+            $details .= $this->toolsHelper->buildButton($manageTarget, 'Manage My Booking', false, 'grey');
+            $details .= '<br>';
         } elseif ($is_future_event && !$is_full) {
             if (($event->max_bookings - $confirmed_bookings - $provisional_bookings ) < 2) {
                 $details .= '<br><b>WARNING: <b> If you make a booking,and the existing provisional bookings are accepted, ';
