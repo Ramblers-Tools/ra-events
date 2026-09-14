@@ -35,6 +35,7 @@ use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 class HtmlView extends BaseHtmlView implements CurrentUserInterface {
 
     protected $attachment_folder;
+    protected $canDo;
     protected $event_type_id;
     protected $event_type;
     protected $items;
@@ -44,6 +45,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
     protected $pagination;
     protected $show_group;
     protected $state;
+    protected $toolsHelper;
     protected $params;
     protected $user;
 
@@ -71,18 +73,18 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         $this->params = $app->getParams('com_ra_events');
         $this->filterForm = $this->get('FilterForm');
         $this->activeFilters = $this->get('ActiveFilters');
-
+        $this->canDo = $this->toolsHelper->canDo('com_ra_events');
         // Find the folder that holds booking slips etc
         $this->attachment_folder = 'images/com_ra_events';
         // Find the maximum number of characters to show from the details
         $this->max_chars = $this->params->get('events_max_chars', 500);
 
-        $toolsHelper = new ToolsHelper;
+        $this->toolsHelper = new ToolsHelper;
         if ($this->event_type_id == 0) {
             $this->event_type = 'Event';
         } else {
             $sql = 'SELECT description FROM #__ra_event_types WHERE id=' . $this->event_type_id;
-            $this->event_type = $toolsHelper->getValue($sql);
+            $this->event_type = $this->toolsHelper->getValue($sql);
         }
 
         $menu_params = $app->getMenu()->getActive()->getParams();
@@ -157,8 +159,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
 
     public function lookupContact($contact_id) {
         $sql .= 'SELECT name FROM #__contact_details WHERE id=' . $contact_id;
-        $toolsHelper = new ToolsHelper;
-        return $toolsHelper->getValue($sql);
+        return $this->toolsHelper->getValue($sql);
     }
 
 }
