@@ -1,12 +1,5 @@
 <?php
 /**
- * @version    2.1.9
- * @component  com_ra_events
- * @author     Charlie Bigley <webmaster@bigley.me.uk>
- * @copyright  2023 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
- * 21/11/23 CB Show "read more" if description too long
- * 11/12/23 CB delete button to add new
  * 23/01/24 CB truncate description if longer than
  * 02/02/24 CB correct duplicate title
  * 01/12/24 CB only show group_code if show_group is set in component configuration
@@ -15,7 +8,7 @@
  * 16/06/25 CB If event is from a different site, show details of it in colour
  * 30/06/25 CB pass layout as parameter to Event, use Tools for email
  * 04/08/25 CB only show Group and Number of Bookings if values are present
- * 14/09/26 CB Add authorization checks for New button and Edit icons
+ * 14/09/26 CB Add authorization checks for New button and Edit icons, use this->toolsHelper
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -71,7 +64,7 @@ $sql = "SELECT id from #__ra_events ";
 $sql .= "WHERE (datediff(event_date, '" . $yesterday . "') > 0 ) ";
 $sql .= "AND event_type_id='" . $this->event_type_id . "' AND state=1 ";
 $sql .= "ORDER BY event_date ASC LIMIT 1";
-$next_id = $toolsHelper->getValue($sql);
+$next_id = $this->toolsHelper->getValue($sql);
 ?>
 
 <form action="<?php echo htmlspecialchars(Uri::getInstance()->toString()); ?>" method="post"
@@ -124,7 +117,7 @@ $next_id = $toolsHelper->getValue($sql);
                         echo '<td class="item-title">';
                     } else {
                         $sql = 'SELECT colour FROM #__ra_api_sites WHERE id=' . $item->api_site_id;
-                        $colour = $toolsHelper->getValue($sql);
+                        $colour = $this->toolsHelper->getValue($sql);
                         echo '<td style="background: ' . $colour . '; ">';
                     }
 
@@ -154,21 +147,21 @@ $next_id = $toolsHelper->getValue($sql);
                     }
                     if ($item->contact_id > 0) {
                         echo '<b>Contact</b> ' . $this->lookupContact($item->contact_id);
-                        echo $toolsHelper->buildLink($target_email . $item->id, '<span class="icon-envelope" aria-hidden="true"></span>', True);
+                        echo $this->toolsHelper->buildLink($target_email . $item->id, '<span class="icon-envelope" aria-hidden="true"></span>', True);
                         echo '<br>';
                     }
                     $details = strip_tags($item->full_details);
                     if (strlen($item->full_details) > $this->max_chars) {
                         $details = strip_tags($item->full_details);
                         echo substr($item->full_details, 0, $this->max_chars);
-                        echo $toolsHelper->buildLink($link, 'Read more', True, 'readmore');
+                        echo $this->toolsHelper->buildLink($link, 'Read more', True, 'readmore');
                     } else {
                         echo $item->full_details;
                     }
                     echo '<br>';
 
                     if ($this->show_group == 1) {
-                        $group = $toolsHelper->lookupGroup($item->group_code);
+                        $group = $this->toolsHelper->lookupGroup($item->group_code);
                         if (!is_null($group)) {
                             echo '<b>Group</b> ' . $group . '<br>';
                         }
@@ -178,20 +171,20 @@ $next_id = $toolsHelper->getValue($sql);
                         if ($item->url_description != '') {
                             echo '<b>' . $item->url_description . '</b>';
                         }
-                        echo $toolsHelper->buildLink($item->url, $item->url, True);
+                        echo $thus->toolsHelper->buildLink($item->url, $item->url, True);
                         echo '<br>';
                     }
                     if ($item->attachments != '') {
                         if ($item->attachment_description != "") {
                             echo '<b>' . $item->attachment_description . '</b>';
                         }
-                        echo $toolsHelper->buildLink($this->attachment_folder . '/' . $item->attachments, $item->attachments, True);
+                        echo $this->toolsHelper->buildLink($this->attachment_folder . '/' . $item->attachments, $item->attachments, True);
                         echo '<br>';
                     }
                     if ($item->bookable == '1') {
                         $sql = 'SELECT SUM(num_places) FROM #__ra_bookings WHERE event_id=' . $item->id;
                         $sql .= ' AND ((state= 0) OR (state=1)) ';
-                        $count = $toolsHelper->getValue($sql);
+                        $count = $this->toolsHelper->getValue($sql);
                         if ($count > 0) {
                             echo '<b>Number of bookings</b> ' . $count;
                         }
