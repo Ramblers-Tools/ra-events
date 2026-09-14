@@ -60,12 +60,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         $app = Factory::getApplication();
         $this->user = $this->getCurrentUser();
         if ($this->_layout == 'edit') {
-/*
-If the User is logged in:
-  Either they should be a superuser
-  Or member of security group com_ra_events
-  Or they must be the organiser of the Event.
-*/
+ 
  if (!this->user->id > 0){
   throw new \Exception('You must be logged on to access this function");         
         }
@@ -122,11 +117,29 @@ If the User is logged in:
         $this->canCreateEvent = $this->authorizationHelper->canCreateEvent();
 
         if ($this->_layout == 'edit') {
-            $authorised = $this->user->authorise('core.create', 'com_ra_events');
+            $authorised = $this->user->authorise('core.create', 'com_ra_events')
+/*
+If the User is logged in:
+  Either they should be a superuser
+  Or member of security group com_ra_events
+  Or they must be the organiser of the Event
+*/
 
             if ($authorised !== true) {
-                throw new \Exception(Text::_('JERROR_ALERTNOAUTHOR'));
+              $error = true;          $this->app->enqueueMessage('You are not authorised to edit this Event');        
             }
+          if ($this->item->state <>1){
+           $error = true; $this->app->enqueueMessage('Event is unpublished');
+          }
+/*
+        if ($this->item->event_date < NOW){
+           $error = true; $this->app->enqueueMessage('Event is in the past');
+          }
+*/
+          if ($error === true){
+            return;
+          }
+
         }
 
         $this->_prepareDocument();
