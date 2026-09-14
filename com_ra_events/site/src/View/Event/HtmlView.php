@@ -1,10 +1,6 @@
 <?php
 
 /**
- * @version    2.5.0
- * @author     Charlie Bigley <webmaster@bigley.me.uk>
- * @copyright  2023 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 19/02/25 CB set up $this->user from getCurrentUser
  * 05/03/25 CB support for bookings
  * 23/03/25 CB simplify message
@@ -12,6 +8,7 @@
  * 26/07/25 CB save input parameters in user state
  * 07/04/26 CB showButton
  * 14/09/26 CB add authorization checks via AuthorizationHelper
+ * 14/0926 CB add authorization checks via ToolsHelper
  */
 
 namespace Ramblers\Component\Ra_events\Site\View\Event;
@@ -47,8 +44,8 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
     protected $layout;
     protected $menu_id;
     protected $params;
-    protected $user;
     protected $toolsHelper;
+    protected $user;
 
     /**
      * Display the view
@@ -62,6 +59,24 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
     public function display($tpl = null) {
         $app = Factory::getApplication();
         $this->user = $this->getCurrentUser();
+        if ($this->_layout == 'edit') {
+/*
+If the User is logged in:
+  Either they should be a superuser
+  Or member of security group com_ra_events
+  Or they must be the organiser of the Event.
+*/
+ if (!this->user->id > 0){
+  throw new \Exception('You must be logged on to access this function");         
+        }
+            $authorised = $this->user->authorise('core.create', 'com_ra_events');
+
+            if ($authorised !== true) {
+
+            }
+        }
+
+/*
         $this->state = $this->get('State');
         $this->item = $this->get('Item');
 //        var_dump($this->item);
@@ -86,9 +101,9 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         // Find the type of event
         $this->event_type_id = $this->item->event_type_id;
 
-        $toolsHelper = new ToolsHelper;
+        $this->toolsHelper = new ToolsHelper;
         $sql = 'SELECT description FROM #__ra_event_types WHERE id=' . $this->event_type_id;
-        $this->event_type = $toolsHelper->getValue($sql);
+        $this->event_type = $this->toolsHelper->getValue($sql);
 
         $this->bookingHelper = new BookingHelper;
 
@@ -101,6 +116,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         $this->authorizationHelper = new AuthorizationHelper;
 
         // Set authorization flags for template use
+        $this->canDo = $this->toolsHelper->canDo('com_ra_events');
         $this->canEdit = $this->user->authorise('core.create', 'com_ra_events') 
             && $this->authorizationHelper->canEditEvent($this->item);
         $this->canCreateEvent = $this->authorizationHelper->canCreateEvent();
