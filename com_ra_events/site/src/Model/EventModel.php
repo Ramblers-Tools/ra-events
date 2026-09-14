@@ -9,6 +9,7 @@
  * 30/10/23 CB extend AdminModel, not ItemModel
  * 23/03/25 CB use getCurrentUser
  * 16/06/25 CB set up api site
+ * 14/09/26 CB add authorization checks via AuthorizationHelper
  */
 
 namespace Ramblers\Component\Ra_events\Site\Model;
@@ -26,6 +27,7 @@ use \Joomla\CMS\Object\CMSObject;
 use \Joomla\CMS\User\CurrentUserInterface;
 use \Joomla\CMS\User\UserFactoryInterface;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\AuthorizationHelper;
 
 /**
  * Ra_events model.
@@ -35,6 +37,7 @@ use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 class EventModel extends ItemModel implements CurrentUserInterface {
 
     public $_item;
+    protected $authorizationHelper;
 
     /**
      * Method to auto-populate the model state.
@@ -112,6 +115,12 @@ class EventModel extends ItemModel implements CurrentUserInterface {
                 // Convert the Table to a clean CMSObject.
                 $properties = $table->getProperties(1);
                 $this->_item = ArrayHelper::toObject($properties, CMSObject::class);
+                
+                // Perform authorization checks
+                if ($this->authorizationHelper === null) {
+                    $this->authorizationHelper = new AuthorizationHelper;
+                }
+                $this->authorizationHelper->checkViewEventAuthorization($this->_item);
             }
 
             if (empty($this->_item)) {
