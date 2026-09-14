@@ -38,7 +38,9 @@ class AuthorizationHelper {
      * Check if user is authorized to view an event
      * 
      * Rules:
-     * - User must be logged in, OR event must be published and not before today
+     * - User must be logged in
+     * - Event must be published (state = 1)
+     * - Event must not be before today
      * - Either user is a superuser
      * - OR user is member of security group com_ra_events
      * - OR user is the organizer of the event
@@ -57,17 +59,17 @@ class AuthorizationHelper {
             throw new \Exception(Text::_('JERROR_ALERTNOAUTHOR'), 403);
         }
 
+        // Check if event is unpublished (state != 1)
+        if ($event->state != 1) {
+            throw new \Exception('Event is not published', 403);
+        }
+
         // Check if event is in the past
         $today = new \DateTime('today');
         $eventDate = new \DateTime($event->event_date);
         
         if ($eventDate < $today) {
             throw new \Exception('Event is in the past and cannot be viewed', 403);
-        }
-
-        // Check if event is unpublished (state != 1)
-        if ($event->state != 1) {
-            throw new \Exception('Event is not published', 403);
         }
 
         // Check authorization: superuser, group member, or organizer
@@ -82,7 +84,7 @@ class AuthorizationHelper {
      * Authorization is granted if ANY of these are true:
      * - User is a superuser
      * - User is member of com_ra_events security group
-     * - User is the organizer (via contact_id)
+     * - User is the organizer (via contact_id -> contact_details.user_id)
      *
      * @param   object  $event  Event object with contact_id
      * 
@@ -159,11 +161,12 @@ class AuthorizationHelper {
     }
 
     /**
-     * Check if user can edit events list
+     * Check if user can edit an event in the list view
      * 
-     * User can edit events if:
-     * - They have core.create permission for com_ra_events, AND
-     * - They are either in com_ra_events group (all events) OR just their own (organizer)
+     * Edit icon shown if:
+     * - User has core.create permission for com_ra_events AND
+     * - Either user is in com_ra_events group (can edit all events)
+     * - OR user is the organizer of the event (can edit own event)
      *
      * @param   object  $event  Event object with contact_id
      * 
