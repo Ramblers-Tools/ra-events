@@ -11,6 +11,7 @@
  * 30/06/25 CB store $layout;
  * 26/07/25 CB save input parameters in user state
  * 07/04/26 CB showButton
+ * 14/09/26 CB add authorization checks via AuthorizationHelper
  */
 
 namespace Ramblers\Component\Ra_events\Site\View\Event;
@@ -23,6 +24,7 @@ use \Joomla\CMS\Factory;
 use \Joomla\CMS\Language\Text;
 use \Joomla\CMS\User\CurrentUserInterface;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\AuthorizationHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 /**
@@ -33,7 +35,10 @@ use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 class HtmlView extends BaseHtmlView implements CurrentUserInterface {
 
     protected $attachment_folder;
+    protected $authorizationHelper;
     protected $bookingHelper;
+    protected $canCreateEvent;
+    protected $canEdit;
     protected $event_type_id;
     protected $event_type;
     protected $state;
@@ -92,9 +97,16 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
             throw new \Exception(implode("\n", $errors));
         }
 
+        // Initialize Authorization Helper
+        $this->authorizationHelper = new AuthorizationHelper;
+
+        // Set authorization flags for template use
+        $this->canEdit = $this->user->authorise('core.create', 'com_ra_events') 
+            && $this->authorizationHelper->canEditEvent($this->item);
+        $this->canCreateEvent = $this->authorizationHelper->canCreateEvent();
 
         if ($this->_layout == 'edit') {
-            $authorised = $user->authorise('core.create', 'com_ra_events');
+            $authorised = $this->user->authorise('core.create', 'com_ra_events');
 
             if ($authorised !== true) {
                 throw new \Exception(Text::_('JERROR_ALERTNOAUTHOR'));
@@ -164,7 +176,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         }
         $buttons = $this->toolsHelper->backButton($back, $caption);
         // get any bookings, confirmed or provisional
- //       echo 'view: event id=' . $this->item->id . ' - event type id=' . $this->event_type_id . '<br>';
+  //       echo 'view: event id=' . $this->item->id . ' - event type id=' . $this->event_type_id . '<br>';
         $tot_bookings = $this->bookingHelper->countActiveBookings($this->item->id);
 
         if (($this->item->emails_outstanding == 0) && ($tot_bookings > 1)) {
