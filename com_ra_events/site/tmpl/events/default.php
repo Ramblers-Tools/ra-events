@@ -15,6 +15,7 @@
  * 16/06/25 CB If event is from a different site, show details of it in colour
  * 30/06/25 CB pass layout as parameter to Event, use Tools for email
  * 04/08/25 CB only show Group and Number of Bookings if values are present
+ * 14/09/26 CB Add authorization checks for New button and Edit icons
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -25,6 +26,7 @@ use \Joomla\CMS\Uri\Uri;
 use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\Layout\LayoutHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\AuthorizationHelper;
 
 HTMLHelper::_('bootstrap.tooltip');
 HTMLHelper::_('behavior.multiselect');
@@ -46,6 +48,10 @@ $canEdit = $user->authorise('core.edit', 'com_ra_events') && file_exists(JPATH_C
 $canCheckin = $user->authorise('core.manage', 'com_ra_events');
 $canChange = $user->authorise('core.edit.state', 'com_ra_events');
 $canDelete = $user->authorise('core.delete', 'com_ra_events');
+
+// Initialize authorization helper
+$authHelper = new AuthorizationHelper();
+$canCreateEvent = $authHelper->canCreateEvent();
 
 // Import CSS
 $wa = $this->document->getWebAssetManager();
@@ -125,7 +131,19 @@ $next_id = $toolsHelper->getValue($sql);
                     echo '<a href = "';
                     echo Route::_($link) . '">';
                     echo rtrim($item->title) . PHP_EOL;                      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                    echo '</a><br>' . PHP_EOL;
+                    echo '</a>';
+                    
+                    // Show Edit icon if user can edit this event
+                    if ($canCreate && $authHelper->canEditEvent($item)) {
+                        $editLink = 'index.php?option=com_ra_events&view=event&layout=edit&id=' . $item->id . '&Itemid=' . $this->menu_id;
+                        echo ' ' . HTMLHelper::_('image', 'system/edit.png', 'Edit', array(
+                            'title' => 'Edit Event',
+                            'onclick' => "window.location='" . Route::_($editLink) . "'",
+                            'style' => 'cursor: pointer;'
+                        ));
+                    }
+                    
+                    echo '<br>' . PHP_EOL;
                     if (!$item->location == '') {
                         echo '<b>Location </b>';
 //. " at " . $item->location . '</h4>';
@@ -198,3 +216,15 @@ $next_id = $toolsHelper->getValue($sql);
     <?php echo HTMLHelper::_('form.token'); ?>
 </form>
 
+<?php
+// Show "New" button at the foot of the screen if user can create events
+if ($canCreateEvent) {
+    echo '<br><div style="text-align: center;">';
+    $newLink = 'index.php?option=com_ra_events&view=event&layout=edit&Itemid=' . $this->menu_id;
+    echo HTMLHelper::_('link', Route::_($newLink), 'New Event', array(
+        'class' => 'btn btn-primary',
+        'title' => 'Create a new event'
+    ));
+    echo '</div>';
+}
+?>
