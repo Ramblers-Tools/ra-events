@@ -60,18 +60,10 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         $app = Factory::getApplication();
         $this->user = $this->getCurrentUser();
         if ($this->_layout == 'edit') {
- 
- if (!this->user->id > 0){
-  throw new \Exception('You must be logged on to access this function");         
+          if (!$this->user->id > 0){
+            throw new \Exception('You must be logged on to access this function');         
+          }          
         }
-            $authorised = $this->user->authorise('core.create', 'com_ra_events');
-
-            if ($authorised !== true) {
-
-            }
-        }
-
-/*
         $this->state = $this->get('State');
         $this->item = $this->get('Item');
 //        var_dump($this->item);
@@ -143,7 +135,6 @@ If the User is logged in:
         }
 
         $this->_prepareDocument();
-        $this->toolsHelper = new ToolsHelper;
         parent::display($tpl);
     }
 
@@ -204,6 +195,10 @@ If the User is logged in:
             $back .= '&layout=' . $this->layout;
         }
         $buttons = $this->toolsHelper->backButton($back, $caption);
+// Other buttons not always required
+        if (!$this->user->id == 0){
+          return $buttons;
+        }      
         // get any bookings, confirmed or provisional
   //       echo 'view: event id=' . $this->item->id . ' - event type id=' . $this->event_type_id . '<br>';
         $tot_bookings = $this->bookingHelper->countActiveBookings($this->item->id);
