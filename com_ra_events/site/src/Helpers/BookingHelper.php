@@ -577,25 +577,25 @@ class BookingHelper {
 //        echo "generateInvitation: token is $token<br>";
 
         $sql = 'SELECT COUNT(id) FROM #__ra_profiles WHERE id=' . $user_id;
-        if ($toolsHelper->getValue($sql) == 0) {
+        if ($this->toolsHelper->getValue($sql) == 0) {
             Factory::getApplication()->enqueueMessage('No profile found for ' . $user_id, 'error');
             return 'Sorry, no profile information found for profile ' . $user_id;
         }
 
         $sql = 'SELECT id FROM #__ra_bookings ';
         $sql .= 'WHERE event_id=' . $event_id . ' AND user_id=' . $user_id;
-        $booking_id = $toolsHelper->getValue($sql);
+        $booking_id = $this->toolsHelper->getValue($sql);
         if (!is_null($booking_id)) {
             return $this->getBookingDetails($booking_id);
         }
         $target = 'index.php?option=com_ra_events&task=booking.processEmail&token=' . $token;
         $sql = 'SELECT title FROM #__ra_events WHERE id=' . $event_id;
         echo "generateInvitation: target is $target<br>";
-        $title = $toolsHelper->getValue($sql);
+        $title = $this->toolsHelper->getValue($sql);
         echo "generateInvitation: title is $title<br>";
         $params = ComponentHelper::getParams('com_ra_tools');
         $website_base = rtrim($params->get('website'), '/') . '/';
-        return $toolsHelper->buildLink($website_base . $target, 'Book place on ' . $title);
+        return $this->toolsHelper->buildLink($website_base . $target, 'Book place on ' . $title);
     }
 
     public function getBookingDetails($booking_id) {
