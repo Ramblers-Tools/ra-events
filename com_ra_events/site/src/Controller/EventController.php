@@ -24,6 +24,7 @@ namespace Ramblers\Component\Ra_events\Site\Controller;
 use \Joomla\CMS\Application\SiteApplication;
 use \Joomla\CMS\Factory;
 use \Joomla\CMS\HTML\HTMLHelper;
+use \Joomla\CMS\Helper\ContentHelper;
 use \Joomla\CMS\Language\Text;
 use \Joomla\CMS\MVC\Controller\BaseController;
 //use \Joomla\CMS\Object\CMSObject;
@@ -60,12 +61,23 @@ class EventController extends BaseController {
         $mode = $this->app->input->getWord('mode', 'preview');
         $menu_id = $this->app->input->getInt('Itemid', '0');
 
-        $sql = 'SELECT e.event_type_id, e.event_date, e.event_date_end, e.title, ';
+        $sql = 'SELECT e.event_type_id, e.event_date, e.event_date_end, e.title, e.contact_id, ';
         $sql .= 't.description AS `event_type`, e.booking1, e.booking2 ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__ra_event_types AS t ON t.id = e.event_type_id ';
         $sql .= 'WHERE e.id=' . $event_id;
         $event = $this->toolsHelper->getItem($sql);
+
+        // Only the event's own organiser (or a user with core.edit) may see who's
+        // booked on an event and their contact details.
+        $canDo = ContentHelper::getActions('com_ra_events');
+        $eventsHelper = new EventsHelper;
+        $ownContact = $eventsHelper->lookupContactid();
+        $canViewReport = $canDo->get('core.edit')
+                || (!is_null($event) && !is_null($ownContact) && $ownContact == $event->contact_id);
+        if (!$canViewReport) {
+            throw new \Exception('This report is only available to the event organiser', 403);
+        }
 
 //echo 'mode is ' . $mode . '<br>';
         $self = 'index.php?option=com_ra_events';

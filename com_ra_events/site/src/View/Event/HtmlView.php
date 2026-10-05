@@ -180,40 +180,44 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
  //       echo 'view: event id=' . $this->item->id . ' - event type id=' . $this->event_type_id . '<br>';
         $tot_bookings = $this->bookingHelper->countActiveBookings($this->item->id);
 
-        if ($tot_bookings > 1) {
-            $target = 'index.php?option=com_ra_events&Itemid=' . $this->menu_id . '&';
-            if ($this->item->emails_outstanding > 0) {
-                // A send is queued or in progress
-                $cancel_target = $target . 'task=event.cancelSending&id=' . $this->item->id;
-                $buttons .= $this->toolsHelper->buildButton($cancel_target, 'Cancel sending', false, 'red');
-            } else {
-                $sql = 'SELECT id, processing_started, date_sent FROM `#__ra_mail_shots` ';
-                $sql .= 'WHERE event_id=' . (INT) $this->item->id;
-                $sql .= ' ORDER BY id DESC LIMIT 2';
-//            echo $sql . '<br>';
-                $mailshot = $this->toolsHelper->getItem($sql);
-                if (is_null($mailshot) || !is_null($mailshot->processing_started)) {
-                    // No mailshot yet, or the last one fully completed
-                    $target .= 'view=mailshotform&event_id=' . $this->item->id;
-                    $buttons .= $this->toolsHelper->buildButton($target, 'New message', false, 'darkgreen');
+        // These all expose who's booked on (and let you message them), so - like
+        // Edit Event - they're only for the event's own organiser or core.edit.
+        if ($canEditEvent) {
+            if ($tot_bookings > 1) {
+                $target = 'index.php?option=com_ra_events&Itemid=' . $this->menu_id . '&';
+                if ($this->item->emails_outstanding > 0) {
+                    // A send is queued or in progress
+                    $cancel_target = $target . 'task=event.cancelSending&id=' . $this->item->id;
+                    $buttons .= $this->toolsHelper->buildButton($cancel_target, 'Cancel sending', false, 'red');
                 } else {
-                    // Mailshot drafted but not yet queued
-                    $edit_target = $target . 'view=mailshotform&id=' . $mailshot->id;
-                    $edit_target .= '&event_id=' . $this->item->id;
-                    $buttons .= $this->toolsHelper->buildButton($edit_target, 'Edit message', false, 'sunrise');
+                    $sql = 'SELECT id, processing_started, date_sent FROM `#__ra_mail_shots` ';
+                    $sql .= 'WHERE event_id=' . (INT) $this->item->id;
+                    $sql .= ' ORDER BY id DESC LIMIT 2';
+//            echo $sql . '<br>';
+                    $mailshot = $this->toolsHelper->getItem($sql);
+                    if (is_null($mailshot) || !is_null($mailshot->processing_started)) {
+                        // No mailshot yet, or the last one fully completed
+                        $target .= 'view=mailshotform&event_id=' . $this->item->id;
+                        $buttons .= $this->toolsHelper->buildButton($target, 'New message', false, 'darkgreen');
+                    } else {
+                        // Mailshot drafted but not yet queued
+                        $edit_target = $target . 'view=mailshotform&id=' . $mailshot->id;
+                        $edit_target .= '&event_id=' . $this->item->id;
+                        $buttons .= $this->toolsHelper->buildButton($edit_target, 'Edit message', false, 'sunrise');
 
-                    $send_target = $target . 'task=event.registerEmails&mailshot_id=' . $mailshot->id;
-                    $send_target .= '&id=' . $this->item->id;
-                    $buttons .= $this->toolsHelper->buildButton($send_target, 'Send message', false, 'red');
+                        $send_target = $target . 'task=event.registerEmails&mailshot_id=' . $mailshot->id;
+                        $send_target .= '&id=' . $this->item->id;
+                        $buttons .= $this->toolsHelper->buildButton($send_target, 'Send message', false, 'red');
+                    }
                 }
             }
+            if ($tot_bookings > 0) {
+                $caption = 'Show Reports';
+                $target = 'index.php?option=com_ra_events&Itemid=' . $this->menu_id;
+                $target .= '&task=event.bookingReports&id=' . $this->item->id;
+                $buttons .= $this->toolsHelper->buildButton($target, $caption, False, 'darkgreen');
+            }
         }
-        if ($tot_bookings > 0) {    
-            $caption = 'Show Reports';
-            $target = 'index.php?option=com_ra_events&Itemid=' . $this->menu_id;
-            $target .= '&task=event.bookingReports&id=' . $this->item->id;
-            $buttons .= $this->toolsHelper->buildButton($target, $caption, False, 'darkgreen');   
-        }     
         return $buttons;
 }
 
