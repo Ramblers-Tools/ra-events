@@ -193,7 +193,10 @@ class EventController extends BaseController {
         echo '<h2>Booking Reports</h2>';
 // echo '2 mode is ' . $mode . '<br>';
         // Display HTML view (preview or alpha mode)
-        echo $this->toolsHelper->showPrint($target);
+        // showPrint() needs this page's own URL - it appends &tmpl=component&print=1 to it,
+        // so keep the current mode/sort and the print-out matches what's on screen.
+        $print_target = $self . '&mode=' . $mode . '&sort=' . $sort;
+        echo $this->toolsHelper->showPrint($print_target);
         $label = 'Download as CSV';
         $target = $self . '&sort=' . $sort . '&mode=csv';
         echo $this->toolsHelper->buildButton($target, $label, false, 'darkgreen');
