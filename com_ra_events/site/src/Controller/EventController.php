@@ -136,7 +136,9 @@ class EventController extends BaseController {
         } else {
             $column_headings = 'Group,Name';
         }
-        $column_headings .= ',Booked,, Email, Extra';
+        // One heading per add_item() below: created, email, guests. A stray extra
+        // comma here shifts every later column left by one.
+        $column_headings .= ',Booked, Email, Extra';
         if ($event->booking1 !== '') {
             $column_headings .= ', ' . $event->booking1;
         }
