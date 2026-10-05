@@ -108,6 +108,7 @@ if ($isNew) {
             <div class="multi-guest-dependent" style="<?php echo $isMultiGuest ? '' : 'display:none;'; ?>">
                 <?php echo $this->form->renderField('max_guests'); ?>
             </div>
+            <?php echo $this->form->renderField('requires_ice'); ?>
             <?php echo $this->form->renderField('waiting_list_enabled'); ?>
             <?php echo $this->form->renderField('notify_organiser'); ?>
             <?php echo $this->form->renderField('booking_info'); ?>

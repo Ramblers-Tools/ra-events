@@ -22,12 +22,14 @@ namespace Ramblers\Component\Ra_events\Administrator\Controller;
 use Joomla\CMS\Application\SiteApplication;
 use Joomla\CMS\Factory;
 use Joomla\CMS\HTML\HTMLHelper;
+use Joomla\CMS\Helper\ContentHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\AdminController;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Toolbar\ToolbarHelper;
 use Joomla\Utilities\ArrayHelper;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\IceHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsTable;
 
@@ -169,17 +171,30 @@ class EventsController extends AdminController {
     public function showBookings() {
 
         $event_id = $this->app->input->getInt('id', '0');
-        $sql = 'SELECT event_date, title, state, requires_payment FROM #__ra_events WHERE id=';
+        $sql = 'SELECT event_date, title, state, requires_payment, requires_ice FROM #__ra_events WHERE id=';
         $event = $this->toolsHelper->getItem($sql . $event_id);
         ToolBarHelper::title('Bookings for ' . ' Event ' . $event->event_date . '/' . $event->title);
+
+        // Emergency contacts go to whoever may edit the event, same rule as the reports
+        $showIce = ($event->requires_ice == 1)
+                && ContentHelper::getActions('com_ra_events')->get('core.edit');
+        $iceByUser = array();
+        if ($showIce) {
+            $iceHelper = new IceHelper;
+            $iceByUser = $iceHelper->getForEvent($event_id);
+        }
 
         $table = new ToolsTable;
         $total_bookings = 0;
         $confirmed_bookings = 0;
         $total_places = 0;
-        $table->add_header('Name,Group,Status,Booked,Places,Other');
+        $header = 'Name,Group,Status,Booked,Places,Other';
+        if ($showIce) {
+            $header .= ',ICE contact,Relationship,ICE phone';
+        }
+        $table->add_header($header);
 
-        $sql = 'SELECT b.id, b.event_id, b.state, b.is_paid, b.created, b.num_places, b.partner, ';
+        $sql = 'SELECT b.id, b.user_id, b.event_id, b.state, b.is_paid, b.created, b.num_places, b.partner, ';
         $sql .= 'p.preferred_name, p.home_group, s.title ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id  ';
@@ -204,6 +219,12 @@ class EventsController extends AdminController {
             $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
             $table->add_item($row->num_places);
             $table->add_item(isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner);
+            if ($showIce) {
+                $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
+                $table->add_item(is_null($ice) ? '<i>Not supplied</i>' : htmlspecialchars($ice->contact_name));
+                $table->add_item(is_null($ice) ? '' : htmlspecialchars($ice->relationship));
+                $table->add_item(is_null($ice) ? '' : htmlspecialchars($ice->phone));
+            }
             $table->generate_line();
         }
         $table->generate_table();

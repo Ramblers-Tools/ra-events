@@ -13,6 +13,8 @@
 # 21/08/26 RH add is_paid/paid_date/paid_by to ra_bookings
 # 21/08/26 RH add requires_payment to ra_events
 # 22/08/26 RH add waiting_list_enabled to ra_events, Waitlisted event state
+# 26/08/26 RH add multi_guest_enabled/max_guests to ra_events, ra_booking_guests
+# 05/10/26 RH add requires_ice to ra_events, ra_ice_contacts
 #-------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `#__ra_bookings` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -49,6 +51,20 @@ CREATE TABLE IF NOT EXISTS `#__ra_booking_guests` (
 ) DEFAULT COLLATE=utf8mb4_unicode_ci;
 
 #-------------------------------------------------------------------------------
+# In Case of Emergency contact details, one row per member (user_id is the Joomla user id)
+CREATE TABLE IF NOT EXISTS `#__ra_ice_contacts` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` INT NOT NULL,
+    `contact_name` VARCHAR(100) NOT NULL,
+    `relationship` VARCHAR(50) NOT NULL,
+    `phone` VARCHAR(50) NOT NULL,
+    `created` DATETIME NOT NULL,
+    `modified` DATETIME NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY idx_ice_user_id(user_id)
+) DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+#-------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `#__ra_events` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
     `event_id` INT NULL ,
@@ -77,6 +93,7 @@ CREATE TABLE IF NOT EXISTS `#__ra_events` (
     `waiting_list_enabled` INT DEFAULT '0',
     `multi_guest_enabled` INT DEFAULT '0',
     `max_guests` INT DEFAULT '1',
+    `requires_ice` INT DEFAULT '0',
     `num_bookings`INT DEFAULT '0',
     `notify_organiser`INT DEFAULT '0',
     `booking_info` TEXT DEFAULT NULL,

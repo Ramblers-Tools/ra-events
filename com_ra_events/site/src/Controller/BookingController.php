@@ -37,6 +37,7 @@ use Joomla\CMS\Table\Table;
 use Joomla\CMS\Router\Route;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
 use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\IceHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\SchemaHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsTable;
@@ -422,7 +423,7 @@ class BookingController extends FormController {
         $print = $this->app->input->getWord('print', 'N');
 // Set up callback so after editing a booking, control passes back to here
         $this->app->setUserState('com_ra_events.event.callback', 'showBookings');
-        $sql = 'SELECT e.id, e.title, e.booking1, e.booking2, e.event_date, e.requires_payment, e.max_bookings, c.user_id ';
+        $sql = 'SELECT e.id, e.title, e.booking1, e.booking2, e.event_date, e.requires_payment, e.max_bookings, e.requires_ice, c.user_id ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__contact_details AS c ON c.id = e.contact_id ';
         $sql .= 'WHERE e.id=' . $event_id;
@@ -463,6 +464,12 @@ class BookingController extends FormController {
             $header .= ',' . $item->booking2;
         }
         $header .= ', Booked';
+        // Emergency contacts are only for the organiser - this page is visible to any
+        // logged-in member, so the event flag alone is not enough to gate them.
+        $showIce = ($item->requires_ice == 1) && $canEdit;
+        if ($showIce) {
+            $header .= ', ICE';
+        }
         if ($canEdit) {
             $header .= ', Action';
         }
@@ -485,6 +492,12 @@ class BookingController extends FormController {
         $bookingHelper = new BookingHelper;
         $guestsByBooking = $bookingHelper->guestNamesForEvent($event_id);
         $guestModals = '';
+        $iceModals = '';
+        $iceByUser = array();
+        if ($showIce) {
+            $iceHelper = new IceHelper;
+            $iceByUser = $iceHelper->getForEvent($event_id);
+        }
         $provisional_bookings = 0;
         $provisional_places = 0;
         $confirmed_bookings = 0;
@@ -556,6 +569,41 @@ class BookingController extends FormController {
             }
 
             $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
+            if ($showIce) {
+                $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
+                if (is_null($ice)) {
+                    $table->add_item('<i>Not supplied</i>');
+                } else {
+                    $modalId = 'iceModal' . $row->id;
+                    $q = chr(34);
+                    $iceButton = '<a class=' . $q . 'ra-icon-btn ra-red' . $q;
+                    $iceButton .= ' href=' . $q . '#' . $modalId . $q;
+                    $iceButton .= ' title=' . $q . 'Emergency contact' . $q;
+                    $iceButton .= ' data-bs-toggle=' . $q . 'modal' . $q;
+                    $iceButton .= ' target=' . $q . '_self' . $q . '>';
+                    $iceButton .= '<span class="icon-phone" aria-hidden="true"></span></a>';
+                    $table->add_item($iceButton);
+
+                    $iceBody = '<ul>';
+                    $iceBody .= '<li><b>Contact:</b> ' . htmlspecialchars($ice->contact_name) . '</li>';
+                    $iceBody .= '<li><b>Relationship:</b> ' . htmlspecialchars($ice->relationship) . '</li>';
+                    $iceBody .= '<li><b>Telephone:</b> ' . htmlspecialchars($ice->phone) . '</li>';
+                    $iceBody .= '</ul>';
+                    $iceModals .= HTMLHelper::_(
+                            'bootstrap.renderModal',
+                            $modalId,
+                            array(
+                                'title' => 'Emergency contact for ' . $row->preferred_name,
+                                'height' => '50%',
+                                'width' => '20%',
+                                'modalWidth' => '50',
+                                'bodyHeight' => '100',
+                                'footer' => '<button class="btn btn-outline-primary" data-bs-dismiss="modal">Close</button>'
+                            ),
+                            $iceBody
+                    );
+                }
+            }
             if ($canEdit) {
                 $target = $target_edit . '&event_id=' . $row->event_id . '&user_id=' . $row->user_id;
                 $target .= '&id=' . $row->id;
@@ -590,6 +638,7 @@ class BookingController extends FormController {
         }
         $table->generate_table();
         echo $guestModals;
+        echo $iceModals;
         echo '<div class="ra-stat-tiles">';
         echo $this->statTile('icon-calendar', 'Provisional', $provisional_bookings . ' bookings, ' . $provisional_places . ' places', 'ra-orange');
         echo $this->statTile('icon-users', 'Confirmed', $confirmed_bookings . ' bookings, ' . $confirmed_places . ' places', 'ra-green');

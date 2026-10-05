@@ -510,10 +510,10 @@ class BookingHelper {
     }
 
     public function extractBookings($event_id, $table = 'N') {
-        $sql = 'SELECT booking1, booking2 FROM #__ra_events WHERE id=' . $event_id;
+        $sql = 'SELECT booking1, booking2, requires_ice FROM #__ra_events WHERE id=' . $event_id;
         $event = $this->toolsHelper->getItem($sql);
 
-        $sql = 'SELECT b.id, b.partner,b.custom1, b.custom2, p.home_group, u.name, u.email ';
+        $sql = 'SELECT b.id, b.user_id, b.partner,b.custom1, b.custom2, p.home_group, u.name, u.email ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id ';
         $sql .= 'INNER JOIN #__users AS u ON u.id = b.user_id  ';
@@ -522,12 +522,22 @@ class BookingHelper {
         $sql .= ' ORDER BY e.group_code,u.name';
         $rows = $this->toolsHelper->getRows($sql);
         $guestsByBooking = $this->guestNamesForEvent($event_id);
+        // Emergency contacts go to whoever may edit the event, same rule as the reports
+        $showIce = ($event->requires_ice == 1) && $this->canDo->get('core.edit');
+        $iceByUser = array();
+        if ($showIce) {
+            $iceHelper = new IceHelper;
+            $iceByUser = $iceHelper->getForEvent($event_id);
+        }
         $title = 'Group,Name,Email,Extra,Special';
         if ($event->booking1 !== '') {
             $title .= ',' . $event->booking1;
         }
         if ($event->booking2 !== '') {
             $title .= ',' . $event->booking2;
+        }
+        if ($showIce) {
+            $title .= ',ICE contact,Relationship,ICE phone';
         }
         if ($table == 'Y') {
             $toolsTable = new ToolsTable();
@@ -544,6 +554,12 @@ class BookingHelper {
                 }
                 if ($event->booking2 !== '') {
                     $toolsTable->add_item($row->custom2);
+                }
+                if ($showIce) {
+                    $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
+                    $toolsTable->add_item(is_null($ice) ? '<i>Not supplied</i>' : htmlspecialchars($ice->contact_name));
+                    $toolsTable->add_item(is_null($ice) ? '' : htmlspecialchars($ice->relationship));
+                    $toolsTable->add_item(is_null($ice) ? '' : htmlspecialchars($ice->phone));
                 }
                 $toolsTable->generate_line();
             }
@@ -563,6 +579,12 @@ class BookingHelper {
                 if ($event->booking2 !== '') {
 //$table->add_item($row->custom2);
                     echo ',' . $row->custom2;
+                }
+                if ($showIce) {
+                    $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
+                    echo ',' . (is_null($ice) ? 'Not supplied' : $ice->contact_name);
+                    echo ',' . (is_null($ice) ? '' : $ice->relationship);
+                    echo ',' . (is_null($ice) ? '' : $ice->phone);
                 }
                 echo '<br>';
             }

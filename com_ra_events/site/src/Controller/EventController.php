@@ -31,6 +31,7 @@ use \Joomla\CMS\MVC\Controller\BaseController;
 use \Joomla\CMS\Router\Route;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
 use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\IceHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsTable;
 
@@ -55,6 +56,21 @@ class EventController extends BaseController {
         $wa->registerAndUseStyle('ramblers', 'com_ra_tools/ramblers.css');
     }
 
+    /**
+     * Quote one value for the hand-built CSV in bookingReports(). Emergency
+     * contact fields are free text and routinely contain commas.
+     *
+     * @param   string  $value
+     * @return  string
+     */
+    private function csvField($value) {
+        $value = (string) $value;
+        if (strpbrk($value, ",\"\r\n") === false) {
+            return $value;
+        }
+        return '"' . str_replace('"', '""', $value) . '"';
+    }
+
     public function bookingReports() {
         $event_id = $this->app->input->getInt('id', '0');
         $sort = $this->app->input->getCmd('sort', 'name');
@@ -62,7 +78,7 @@ class EventController extends BaseController {
         $menu_id = $this->app->input->getInt('Itemid', '0');
 
         $sql = 'SELECT e.event_type_id, e.event_date, e.event_date_end, e.title, e.contact_id, ';
-        $sql .= 't.description AS `event_type`, e.booking1, e.booking2 ';
+        $sql .= 't.description AS `event_type`, e.booking1, e.booking2, e.requires_ice ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__ra_event_types AS t ON t.id = e.event_type_id ';
         $sql .= 'WHERE e.id=' . $event_id;
@@ -106,6 +122,12 @@ class EventController extends BaseController {
         $rows = $this->toolsHelper->getRows($sql);
         $bookingHelper = new BookingHelper;
         $guestsByBooking = $bookingHelper->guestNamesForEvent($event_id);
+        $requiresIce = ($event->requires_ice == 1);
+        $iceByUser = array();
+        if ($requiresIce) {
+            $iceHelper = new IceHelper;
+            $iceByUser = $iceHelper->getForEvent($event_id);
+        }
 
         // Build column headings based on sort order and presence of custom fields
         $column_headings = '';
@@ -120,6 +142,9 @@ class EventController extends BaseController {
         }
         if ($event->booking2 !== '') {
             $column_headings .= ', ' . $event->booking2;
+        }
+        if ($requiresIce) {
+            $column_headings .= ', ICE contact, Relationship, ICE phone';
         }
 
         // If CSV download requested, output headers and exit
@@ -142,6 +167,12 @@ class EventController extends BaseController {
                 }
                 if ($event->booking2 !== '') {
                     $csvData .= ', ' . $row->custom2;
+                }
+                if ($requiresIce) {
+                    $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
+                    $csvData .= ', ' . $this->csvField(is_null($ice) ? 'Not supplied' : $ice->contact_name);
+                    $csvData .= ', ' . $this->csvField(is_null($ice) ? '' : $ice->relationship);
+                    $csvData .= ', ' . $this->csvField(is_null($ice) ? '' : $ice->phone);
                 }
                 $csvData .= ', ';
                 if (str_contains($row->special_request, ',')) {
@@ -218,6 +249,12 @@ class EventController extends BaseController {
                 }
                 if ($event->booking2 !== '') {
                     $toolsTable->add_item($row->custom2);
+                }
+                if ($requiresIce) {
+                    $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
+                    $toolsTable->add_item(is_null($ice) ? '<i>Not supplied</i>' : htmlspecialchars($ice->contact_name));
+                    $toolsTable->add_item(is_null($ice) ? '' : htmlspecialchars($ice->relationship));
+                    $toolsTable->add_item(is_null($ice) ? '' : htmlspecialchars($ice->phone));
                 }
                 $toolsTable->add_item($row->special_request);
                 $toolsTable->generate_line();

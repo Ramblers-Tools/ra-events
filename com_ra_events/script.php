@@ -402,13 +402,27 @@ class Com_Ra_eventsInstallerScript {
 // If we return false, no message is displayed on the console, just "Custom installation failure"
 //           return false;
         }
-        $this->version_required = '2.12.0';
+        $this->version_required = '2.15.0';
         if (version_compare($this->current_version, $this->version_required, 'ge')) {
             echo 'Current version is ' . $this->current_version . ', no additional processing required</p>';
             return true;
         } else {
             echo '<p>Version is currently ' . $this->current_version . ', ';
             echo 'Requires version >= ' . $this->version_required . '</p>';
+        }
+        if (version_compare($this->current_version, '2.14.4', 'le')) {
+            $this->checkColumn('ra_events', 'requires_ice', 'A', 'INT DEFAULT "0" AFTER max_guests; ');
+            $sql = 'CREATE TABLE IF NOT EXISTS #__ra_ice_contacts (';
+            $sql .= '`id` INT UNSIGNED NOT NULL AUTO_INCREMENT, ';
+            $sql .= '`user_id` INT NOT NULL, ';
+            $sql .= '`contact_name` VARCHAR(100) NOT NULL, ';
+            $sql .= '`relationship` VARCHAR(50) NOT NULL, ';
+            $sql .= '`phone` VARCHAR(50) NOT NULL, ';
+            $sql .= '`created` DATETIME NOT NULL, ';
+            $sql .= '`modified` DATETIME NULL, ';
+            $sql .= 'PRIMARY KEY (`id`), UNIQUE KEY idx_ice_user_id(user_id)';
+            $sql .= ') DEFAULT COLLATE=utf8mb4_unicode_ci;';
+            $this->executeCommand($sql);
         }
         if (version_compare($this->current_version, '2.11.0', 'le')) {
             $this->checkColumn('ra_events', 'multi_guest_enabled', 'A', 'INT DEFAULT "0" AFTER waiting_list_enabled; ');

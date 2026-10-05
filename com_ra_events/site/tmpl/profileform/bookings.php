@@ -20,6 +20,7 @@ use \Joomla\CMS\Uri\Uri;
 use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\Language\Text;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\IceHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsTable;
 
@@ -42,7 +43,8 @@ echo $toolsHelper->showEvents($this->user->id);
 
 // Find events on which the user has the booked
 $sql = 'SELECT e.id, e.group_code, e.event_time, e.event_date, e.title, e.bookable, ';
-$sql .= 'e.max_bookings, e.requires_payment, t.description, b.id AS booking_id, b.state, b.is_paid ';
+$sql .= 'e.max_bookings, e.requires_payment, e.requires_ice, t.description, ';
+$sql .= 'b.id AS booking_id, b.state, b.is_paid ';
 $sql .= 'FROM #__ra_events AS e ';
 $sql .= 'INNER JOIN #__ra_bookings AS b ON b.event_id = e.id ';
 $sql .= 'INNER JOIN #__ra_event_types AS t ON t.id = e.event_type_id ';
@@ -60,8 +62,36 @@ if ($rows === false) {
     echo 'You have not yet made any bookings<br>';
 } else {
     echo '<h2>Events you have booked on</h2>';
+
+    // ToolsTable echoes its header as soon as it's added, so decide up front whether
+    // any of these events asks for an emergency contact before building the table.
+    $anyIceRequired = false;
+    foreach ($rows as $row) {
+        if ($row->requires_ice == 1) {
+            $anyIceRequired = true;
+            break;
+        }
+    }
+    $hasIce = false;
+    if ($anyIceRequired) {
+        $iceHelper = new IceHelper;
+        $hasIce = !is_null($iceHelper->getForUser($this->user->id));
+        if (!$hasIce) {
+            $ice_link = 'index.php?option=com_ra_events&view=ice';
+            echo '<div style="color: red;"><b>One or more of your bookings asks for an ';
+            echo 'emergency contact, and you have not given one.</b> Please add your details on the ';
+            echo $toolsHelper->buildLink($ice_link, 'My emergency contact', false);
+            echo ' page.</div><br>';
+        }
+    }
+
     $toolsTable = new ToolsTable;
-    $toolsTable->add_header('Group,Date,Event,Type,Status,Guests,Manage');
+    $header = 'Group,Date,Event,Type,Status,Guests';
+    if ($anyIceRequired) {
+        $header .= ',Emergency contact';
+    }
+    $header .= ',Manage';
+    $toolsTable->add_header($header);
     $guestModals = '';
     foreach ($rows as $row) {
         $toolsTable->add_item($row->group_code);
@@ -106,6 +136,16 @@ if ($rows === false) {
             );
         } else {
             $toolsTable->add_item('');
+        }
+
+        if ($anyIceRequired) {
+            if ($row->requires_ice != 1) {
+                $toolsTable->add_item('<i>Not needed</i>');
+            } elseif ($hasIce) {
+                $toolsTable->add_item('Supplied');
+            } else {
+                $toolsTable->add_item('<span style="color: red;"><b>Needed</b></span>');
+            }
         }
 
         if ($row->state != -2) {

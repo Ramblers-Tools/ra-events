@@ -14,6 +14,7 @@ use \Joomla\CMS\Factory;
 use \Joomla\CMS\Uri\Uri;
 use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\Language\Text;
+use Ramblers\Component\Ra_events\Site\Helpers\IceHelper;
 
 $wa = $this->document->getWebAssetManager();
 $wa->useScript('keepalive')
@@ -34,6 +35,26 @@ HTMLHelper::_('bootstrap.tooltip');
                 <?php echo $this->form->renderField('home_group'); ?>
                 <?php echo $this->form->renderField('state'); ?>
                 <?php echo $this->form->renderField('id'); ?>
+            </fieldset>
+            <?php
+            // Emergency contact details, read-only - only the member may change them,
+            // and they live in #__ra_ice_contacts rather than on the profile record.
+            $iceHelper = new IceHelper;
+            $ice = $iceHelper->getForUser($this->item->id);
+            ?>
+            <fieldset class="adminform">
+                <legend>Emergency contact</legend>
+                <?php if (is_null($ice)) : ?>
+                    <p><i>This member has not given any emergency contact details.</i></p>
+                <?php else : ?>
+                    <p>
+                        <b>Contact:</b> <?php echo htmlspecialchars($ice->contact_name); ?><br>
+                        <b>Relationship:</b> <?php echo htmlspecialchars($ice->relationship); ?><br>
+                        <b>Telephone:</b> <?php echo htmlspecialchars($ice->phone); ?><br>
+                        <b>Last updated:</b> <?php echo HTMLHelper::_('date', $ice->modified, 'd M y H:i'); ?>
+                    </p>
+                <?php endif; ?>
+                <p><i>Only the member can change these, from the emergency contact page on the website.</i></p>
             </fieldset>
         </div>
     </div>

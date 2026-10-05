@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+    <layout title="My emergency contact (ICE)" option="View">
+        <message>
+                        <![CDATA[Let the logged-in user record the person to contact in an emergency]]>
+        </message>
+    </layout>
+    <fields name="params">
+        <fieldset name="basic">
+            <field name="note1" type="note" label="This menu option should only be visible to users that have logged in"/>
+            <field
+                name="page_intro"
+                type="textbox"
+                label="Page Introduction"
+                description="Text to be shown before the form, replacing the standard wording"
+                default=""
+            />
+                <field name="note2" type="note" label="For information about this component please visit: https://docs.stokeandnewcastleramblers.org.uk and read the Webmasters Guide"/>
+            </fieldset>
+    </fields>
+</metadata>

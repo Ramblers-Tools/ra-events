@@ -40,6 +40,7 @@
     26/08/26 RH version 2.14.2 - fix organiser "Add to wait list" wrongly blocked with "Not enough places left for that many guests" on multi-guest events - the guest-count capacity check now skips itself for a deliberate waitlist booking
     23/09/26 RH version 2.14.3 - fix BookingHelper::generateInvitation() using an undefined $toolsHelper (a stale commented-out assignment left it unset) instead of $this->toolsHelper - reported by Charlie
     05/10/26 RH version 2.14.4 - security fix: event page's "New message"/"Show Reports" buttons were visible to everyone including anonymous visitors, and EventController::bookingReports() had no authorisation check at all, exposing booked members' names/emails to anyone who knew an event id. Both now require the event's own organiser or core.edit
+    05/10/26 RH version 2.15.0 - In Case of Emergency (ICE) details: members record a contact name/relationship/telephone on a new "My emergency contact" page, events can be flagged as requiring them, and the organiser sees them on the booking reports
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -50,7 +51,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.14.4</version>
+    <version>2.15.0</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	

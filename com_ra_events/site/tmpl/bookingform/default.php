@@ -21,6 +21,7 @@ use \Joomla\CMS\Uri\Uri;
 use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\Language\Text;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
+use Ramblers\Component\Ra_events\Site\Helpers\IceHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 $wa = $this->document->getWebAssetManager();
@@ -66,10 +67,23 @@ echo $this->intro;
         <div class="control-group">
             <?php
             $sql = 'SELECT booking1, booking1_hint, booking2, booking2_hint, ';
-            $sql .= 'multi_guest_enabled, max_guests ';
+            $sql .= 'multi_guest_enabled, max_guests, requires_ice ';
             $sql .= 'FROM #__ra_events WHERE id=' . $this->event_id;
             $event = $toolsHelper->getItem($sql);
             $isMultiGuestEvent = ($event->multi_guest_enabled == 1);
+
+            // This event asks for an emergency contact - nudge, but never block the booking
+            if ($event->requires_ice == 1) {
+                $iceHelper = new IceHelper;
+                if (is_null($iceHelper->getForUser($this->user_id))) {
+                    $ice_link = 'index.php?option=com_ra_events&view=ice';
+                    echo '<div style="color: red;"><b>This event asks for an emergency contact, ';
+                    echo 'and you have not given one.</b><br>';
+                    echo 'You can still book now - please add your details on the ';
+                    echo $toolsHelper->buildLink($ice_link, 'My emergency contact', false);
+                    echo ' page.</div><br>';
+                }
+            }
 
             // Find the number of places available
             $sql = 'SELECT max_bookings FROM #__ra_events WHERE id=' . $this->event_id;

@@ -181,6 +181,18 @@
            label="Max guests per booking"
            description="Maximum number of additional guests a booker may bring, not counting themselves"
            />
+    <field
+        name="requires_ice"
+        type="radio"
+        label="Requires emergency contact"
+        description="Ask attendees for an In Case of Emergency contact, shown to the organiser"
+        showon="bookable:1"
+        class="btn-group btn-group-yesno"
+        default="0"
+        >
+            <option value="1">JYES</option>
+            <option value="0">JNO</option>
+    </field>
     <field name="booking_info" 
            type="editor" 
            buttons="true" 
