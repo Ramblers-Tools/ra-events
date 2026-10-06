@@ -43,6 +43,7 @@
     05/10/26 RH version 2.15.0 - In Case of Emergency (ICE) details: members record a contact name/relationship/telephone on a new "My emergency contact" page, events can be flagged as requiring them, and the organiser sees them on the booking reports
     05/10/26 RH version 2.15.1 - fix Show Reports columns being one out of step with their headings - a stray extra comma in the heading list produced an empty column that shifted Email onwards (and the new ICE columns) left by one
     05/10/26 RH version 2.15.2 - fix the print button on Show Reports giving a not-found error - showPrint() was passed $target before it was assigned, so the link had no URL
+    06/10/26 RH version 2.15.3 - stop a double-submitted booking form (or a second click on a Book button while a slow request runs) creating duplicate bookings - refused server-side, and the Submit button now disables itself while saving
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -53,7 +54,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.15.2</version>
+    <version>2.15.3</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	

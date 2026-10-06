@@ -214,7 +214,7 @@ echo $this->intro;
             <div class="controls">
 
                 <?php if ($this->canSave): ?>
-                    <button type="submit" class="validate btn btn-primary">
+                    <button type="submit" id="booking-submit" class="validate btn btn-primary">
                         <span class="fas fa-check" aria-hidden="true"></span>
                         <?php echo Text::_('JSUBMIT'); ?>
                     </button>
@@ -268,3 +268,49 @@ echo $this->intro;
     })();
 </script>
 <?php endif; ?>
+
+<script>
+    // A slow save invites a second click on Submit, which used to produce two
+    // bookings. The model refuses the duplicate server-side; this stops the second
+    // request being sent at all, and shows the booking is in progress.
+    (function () {
+        var form = document.getElementById('form-booking');
+        var button = document.getElementById('booking-submit');
+        if (!form || !button) {
+            return;
+        }
+        var original = button.innerHTML;
+
+        function release() {
+            form.removeAttribute('data-submitting');
+            button.disabled = false;
+            button.innerHTML = original;
+        }
+
+        form.addEventListener('submit', function (event) {
+            if (form.getAttribute('data-submitting') === '1') {
+                event.preventDefault();
+                return;
+            }
+            form.setAttribute('data-submitting', '1');
+            button.disabled = true;
+            button.innerHTML = 'Saving your booking...';
+
+            // Joomla's validator cancels the submit when a field is invalid and the
+            // page stays put - give the button back so the user can correct and retry.
+            window.setTimeout(function () {
+                if (form.querySelector('.invalid')) {
+                    release();
+                }
+            }, 500);
+        });
+
+        // Coming back to this page via the browser's back button can restore it
+        // with the button still disabled.
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                release();
+            }
+        });
+    })();
+</script>

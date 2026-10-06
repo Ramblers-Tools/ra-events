@@ -127,6 +127,29 @@ class BookingHelper {
     }
 
     /**
+     * The id of this user's live booking on an event, or 0 if they haven't got
+     * one. Cancelled bookings (state -2) don't count, so somebody who cancelled
+     * can book again.
+     *
+     * Used to stop a double-submitted form - or an impatient second click on a
+     * Book button while a slow request is still running - creating a second
+     * booking for the same person on the same event.
+     *
+     * @param   int  $event_id
+     * @param   int  $user_id
+     * @return  int
+     */
+    public function activeBookingId($event_id, $user_id) {
+        $sql = 'SELECT id FROM #__ra_bookings ';
+        $sql .= 'WHERE event_id=' . (int) $event_id;
+        $sql .= ' AND user_id=' . (int) $user_id;
+        $sql .= ' AND state != -2';
+        $sql .= ' ORDER BY id LIMIT 1';
+        $id = $this->toolsHelper->getValue($sql);
+        return is_null($id) ? 0 : (int) $id;
+    }
+
+    /**
      * Load a booking (joined with its event) for the self-service Manage My
      * Booking feature, checking that the current user owns it. Single place
      * ownership is enforced for that feature - every entry point (the GET
@@ -292,6 +315,15 @@ class BookingHelper {
         $item = $this->toolsHelper->getItem($sql);
         if ($item->bookable == 0) {
             throw new \Exception('This event cannot be booked', 403);
+        }
+
+        // Guard against a second click on a Book button while the first request is
+        // still running - hand back the booking that already exists instead of
+        // creating a duplicate for the same person on the same event.
+        $existing = $this->activeBookingId($event_id, $user_id);
+        if ($existing > 0) {
+            $this->message = 'A booking already exists';
+            return $existing;
         }
 
         if (($app->isClient('administrator') || // We are in the backend

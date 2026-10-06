@@ -365,6 +365,15 @@ class BookingformModel extends FormModel implements CurrentUserInterface {
         }
 
         if (empty($id)) {
+            // A slow response invites a second click on Submit. If this person already
+            // has a live booking on this event, hand that one back rather than creating
+            // a duplicate - and don't re-send the acknowledgement for it either.
+            $existing = $bookingHelper->activeBookingId($data['event_id'], $data['user_id']);
+            if ($existing > 0) {
+                Factory::getApplication()->setUserState('com_ra_events.bookingform.id', $existing);
+                Factory::getApplication()->enqueueMessage('A booking already exists for this event', 'warning');
+                return $existing;
+            }
             // creating a new record
             // See if we need to notify the organiser
             $sql = 'SELECT notify_organiser FROM #__ra_events WHERE id=' . $data['event_id'];
