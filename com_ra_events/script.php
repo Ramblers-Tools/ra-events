@@ -411,7 +411,10 @@ class Com_Ra_eventsInstallerScript {
             echo 'Requires version >= ' . $this->version_required . '</p>';
         }
         if (version_compare($this->current_version, '2.14.4', 'le')) {
-            $this->checkColumn('ra_events', 'requires_ice', 'A', 'INT DEFAULT "0" AFTER max_guests; ');
+            // No "AFTER <column>" here: these blocks run newest gate first, so a site
+            // upgrading from before 2.12.0 reaches this one before max_guests exists and
+            // the ALTER would fail, aborting the whole install. Column order is cosmetic.
+            $this->checkColumn('ra_events', 'requires_ice', 'A', 'INT DEFAULT "0"; ');
             $sql = 'CREATE TABLE IF NOT EXISTS #__ra_ice_contacts (';
             $sql .= '`id` INT UNSIGNED NOT NULL AUTO_INCREMENT, ';
             $sql .= '`user_id` INT NOT NULL, ';
@@ -425,7 +428,9 @@ class Com_Ra_eventsInstallerScript {
             $this->executeCommand($sql);
         }
         if (version_compare($this->current_version, '2.11.0', 'le')) {
-            $this->checkColumn('ra_events', 'multi_guest_enabled', 'A', 'INT DEFAULT "0" AFTER waiting_list_enabled; ');
+            // waiting_list_enabled is added by the 2.7.2 block below, which runs after
+            // this one - so no "AFTER" clause (see the note on requires_ice above).
+            $this->checkColumn('ra_events', 'multi_guest_enabled', 'A', 'INT DEFAULT "0"; ');
             $this->checkColumn('ra_events', 'max_guests', 'A', 'INT DEFAULT "1" AFTER multi_guest_enabled; ');
             $sql = 'CREATE TABLE IF NOT EXISTS #__ra_booking_guests (';
             $sql .= '`id` INT UNSIGNED NOT NULL AUTO_INCREMENT, ';
@@ -440,7 +445,9 @@ class Com_Ra_eventsInstallerScript {
             $this->checkColumn('ra_event_types', 'description', 'U', 'VARCHAR(100) NOT NULL; ');
         }
         if (version_compare($this->current_version, '2.7.2', 'le')) {
-            $this->checkColumn('ra_events', 'waiting_list_enabled', 'A', 'INT DEFAULT "0" AFTER max_bookings; ');
+            // max_bookings is added by the 2.1.2 block below, which runs after this one
+            // - so no "AFTER" clause (see the note on requires_ice above).
+            $this->checkColumn('ra_events', 'waiting_list_enabled', 'A', 'INT DEFAULT "0"; ');
             $sql = 'INSERT IGNORE INTO #__ra_event_states (seq,id,title) VALUES (4,-1,"Waitlisted")';
             $this->executeCommand($sql);
         }
