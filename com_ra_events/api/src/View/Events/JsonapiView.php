@@ -40,7 +40,7 @@ class JsonapiView extends BaseApiView {
         'event_date',
         'event_date_end',
         'event_time',
-        'event_type_id',
+        'event_type',
         'title',
         'details',
         'reports',
@@ -72,7 +72,7 @@ class JsonapiView extends BaseApiView {
      */
     protected $fieldsToRenderList = [
         'id',
-        'event_type_id',
+        'event_type',
         'event_date',
         'event_date_end',
         'event_time',

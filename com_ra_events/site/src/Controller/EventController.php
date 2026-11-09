@@ -1,11 +1,7 @@
 <?php
 
 /**
- * @version    2.4.15
- * @component  com_ra_events
- * @author     Charlie Bigley <webmaster@bigley.me.uk>
- * @copyright  2023 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
+\\
  * 21/03/25 CB display proper message on success
  * 30/06/25 CB extractBookings
  * 12/10/25 CB bookingReports
@@ -15,6 +11,7 @@
  * 25/02/26 CB showTerms (invoked from link in confirmation email)
  * 02/03/26 CB use preferred_name in reports, not name
  * 17/06/26 CB include booked date in the CSV output
+ * 09/11/26 CB Allow callback to booking reports
  */
 
 namespace Ramblers\Component\Ra_events\Site\Controller;
@@ -73,6 +70,12 @@ class EventController extends BaseController {
 
     public function bookingReports() {
         $event_id = $this->app->input->getInt('id', '0');
+        // Redirect to the new menu
+        $this->setRedirect(Route::_('index.php?option=com_ra_events&task=booking_reports.showMenu&id=' . $event_id, false));
+        return;                // <<<<<<<<<<,
+
+
+
         $sort = $this->app->input->getCmd('sort', 'name');
         $mode = $this->app->input->getWord('mode', 'preview');
         $menu_id = $this->app->input->getInt('Itemid', '0');
@@ -89,8 +92,7 @@ class EventController extends BaseController {
         $canDo = ContentHelper::getActions('com_ra_events');
         $eventsHelper = new EventsHelper;
         $ownContact = $eventsHelper->lookupContactid();
-        $canViewReport = $canDo->get('core.edit')
-                || (!is_null($event) && !is_null($ownContact) && $ownContact == $event->contact_id);
+        $canViewReport = $canDo->get('core.edit') || (!is_null($event) && !is_null($ownContact) && $ownContact == $event->contact_id);
         if (!$canViewReport) {
             throw new \Exception('This report is only available to the event organiser', 403);
         }
@@ -500,7 +502,9 @@ class EventController extends BaseController {
         $this->toolsHelper->showEmail($id);
 
         $back = 'index.php?option=com_ra_events&Itemid=' . $menu_id;
-        if ($callback == 'myemails') {
+        if ($callback == 'bookings') {
+            $back .= '&task=booking_reports.emails&id=' . $ref_id;
+        } elseif ($callback == 'myemails') {
             $back .= '&view=myemails&user_id=' . $ref_id;
         } elseif ($callback == 'profileform') {
             $back .= '&task=event.showEmails&id=' . $ref_id;

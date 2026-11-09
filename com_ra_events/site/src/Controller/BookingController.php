@@ -475,7 +475,7 @@ class BookingController extends FormController {
         }
         $table->add_header($header);
 
-        $sql = 'SELECT b.*, ';
+        $sql = 'SELECT DISTINCT b.*, ';
         $sql .= 'p.preferred_name, s.title ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id  ';

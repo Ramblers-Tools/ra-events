@@ -228,7 +228,7 @@ class EventsHelper {
         if (JDEBUG) {
             $message = 'Site id ' . $site_id . ', ';
             $message .= 'Seeking events from ' . $url;
-            $message .= 'Token is ' . $token;
+            $message .= ', Authentication token is configured';
             $this->messages[] = $message;
         }
 //      set up maximum time of 5 minutes
@@ -263,48 +263,41 @@ class EventsHelper {
         $rawResponse = curl_exec($curl);
         $error = curl_error($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $headerSize = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
-        $responseHeaders = '';
-        $responseBody = '';
-        if ($rawResponse !== false) {
-            $responseHeaders = substr($rawResponse, 0, $headerSize);
-            $responseBody = substr($rawResponse, $headerSize);
-        }
-//        if (curl_errno($curl)) {
-//            echo curl_error($curl);
-//        }
+        $responseBody = $rawResponse;
         curl_close($curl);
 
+        if ($responseBody === false) {
+            $this->messages[] = 'Request failed: ' . $error;
+            $this->messages[] = 'Endpoint: ' . $url;
+            return false;
+        }
+
         if ($httpCode !== 200) {
-            $message = 'Error: ' . $httpCode;
+            $message = 'HTTP error: ' . $httpCode;
             if ($httpCode == 401) {
                 $message .= ': Authorization Required (Token missing or invalid)';
-            } else {
+            } elseif ($error !== '') {
                 $message .= ': ' . $error;
             }
             $this->messages[] = $message;
-            $this->messages[] = 'Endpoint: ' . $endpoint;
-            if ($responseHeaders !== '') {
-                $this->messages[] = 'Response headers: ' . trim($responseHeaders);
-            }
+            $this->messages[] = 'Endpoint: ' . $url;
             if ($responseBody !== '') {
                 $this->messages[] = 'Response body: ' . substr($responseBody, 0, 500);
             }
-//            return false;
+            return false;
         }
+
         $details = json_decode($responseBody, true);
         if ($details === null && json_last_error() !== JSON_ERROR_NONE) {
             $this->messages[] = 'JSON decode error: ' . json_last_error_msg();
+            $this->messages[] = 'Endpoint: ' . $url;
+            $this->messages[] = 'Response body starts with: ' . substr($responseBody, 0, 200);
+            return false;
         }
         if (JDEBUG) {
-            echo '<b>Start of details</b><br>';
-            var_dump($details);
-            echo '<br><b>End of details</b><br>';
-            echo $responseBody;
-            echo '<br>========<br>';
-            //           return;
-            return $details;
+            $this->messages[] = 'Decoded shared events response successfully';
         }
+        return $details;
     }
 
     private function getSubscribers($event_id, $restart = 'N') {
@@ -609,61 +602,6 @@ class EventsHelper {
         return true;
     }
 
-    public function showFirst($api_site_id, $events) {
-        echo '<h2>First Shared event</h2>';
-        $sql = 'SELECT * FROM #__ra_api_sites WHERE id=' . $api_site_id;
-
-        $site = $this->toolsHelper->getItem($sql);
-        $website = $site->url;
-        $target = '&id=';
-        ToolBarHelper::title('First Shared event for ' . $website);
-        // Accept either the raw JSON payload (with a data key) or the data array directly.
-        $payload = $events;
-        if (isset($events['data']) && is_array($events['data'])) {
-            $payload = $events['data'];
-        }
-
-        $count = is_array($payload) ? count($payload) : 0;
-        echo $count . ' events returned<br>';
-
-        if ($count === 0) {
-            echo 'No events to display<br>';
-        } else {
-            $event = $payload[0];
-            $eventId = isset($event['id']) ? $event['id'] : '';
-            $eventType = isset($event['type']) ? $event['type'] : '';
-            echo 'event id=' . $eventId . ', type=' . $eventType . '<br>';
-
-            $attributes = isset($event['attributes']) && is_array($event['attributes']) ? $event['attributes'] : array();
-
-            echo '<table class="table">';
-            echo '<tr><th>Field</th><th>Value</th></tr>';
-            $fieldCount = 0;
-            foreach ($attributes as $key => $val) {
-                $fieldCount++;
-                if (is_array($val) || is_object($val)) {
-                    $val = json_encode($val);
-                }
-                echo '<tr>';
-                echo '<td>' . htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8') . '</td>';
-                echo '<td>' . htmlspecialchars((string) $val, ENT_QUOTES, 'UTF-8') . '</td>';
-                echo '</tr>';
-            }
-            echo '</table>';
-            echo $fieldCount . ' fields<br>';
-
-            if (isset($attributes['contact_name'])) {
-                echo 'contact_id=' . $this->lookupContact($attributes['contact_name']) . '<br>';
-            }
-        }
-        $target = 'administrator/index.php?option=com_ra_tools&view=apisites';
-        echo $this->toolsHelper->backButton($target);
-        $target = 'administrator/index.php?option=com_ra_tools&task=apisites.refreshEvents&mode=1&id=' . $api_site_id;
-        echo $this->toolsHelper->buildButton($target, 'Show all');
-        $target = 'administrator/index.php?option=com_ra_tools&task=apisites.refreshEvents&mode=2&id=' . $api_site_id;
-        echo $this->toolsHelper->buildButton($target, 'Refresh', false, 'red');
-    }
-
     public function showShared($api_site_id, $events) {
 // Invoked from ApisitesController.refresh
         echo '<h2>List of Shared events</h2>';
@@ -682,12 +620,6 @@ class EventsHelper {
             $id = $events[$i]['id'];
             $toolsTable->add_item($id);
             $attributes = (object) $event['attributes'];
-            if (JDEBUG) {
-                if ($i == 1) {
-                    var_dump($attributes);
-                    echo '<br>';
-                }
-            }
             $toolsTable->add_item($attributes->state);
             $toolsTable->add_item($attributes->event_date);
             $toolsTable->add_item($attributes->title);
@@ -727,6 +659,13 @@ class EventsHelper {
 //           echo $i . ', id= ' . $events[$i]['id'] . '<br>';
             $attributes = (object) $event['attributes'];
             $contact_id = $this->lookupContact($attributes->contact_name);
+            $event_type = trim((string) ($attributes->event_type ?? $attributes->event_type_id ?? ''));
+            if ($event_type === '') {
+                $this->messages[] = 'Skipping event ' . $original_id . ': no event type was returned';
+                $i++;
+                continue;
+            }
+            $event_type_id = $this->getOrCreateSharedEventType($event_type);
             if ($attributes->state == '') {
                 echo "Record $original_id has blank state<br>";
                 $attributes->state = 0;
@@ -754,7 +693,7 @@ class EventsHelper {
                     ->set("event_date = " . $this->db->quote($attributes->event_date))
                     ->set("event_date_end = " . $event_date_end)
                     ->set("event_time = " . $this->db->quote($attributes->event_time))
-                    ->set("event_type_id = " . $this->db->quote($attributes->event_type_id))
+                    ->set("event_type_id = " . (int) $event_type_id)
                     ->set("title = " . $this->db->quote($attributes->title))
                     ->set("details = " . $this->db->quote($attributes->details))
                     ->set("reports = " . $this->db->quote($attributes->reports))
@@ -824,6 +763,25 @@ class EventsHelper {
         if ($update_count > 0) {
             $this->messages[] = 'Number of Events updated ' . $update_count;
         }
+    }
+
+    private function getOrCreateSharedEventType($description) {
+        $query = $this->db->getQuery(true)
+                ->select($this->db->quoteName('id'))
+                ->from($this->db->quoteName('#__ra_event_types'))
+                ->where($this->db->quoteName('description') . ' = ' . $this->db->quote($description));
+        $this->db->setQuery($query);
+        $eventTypeId = (int) $this->db->loadResult();
+        if ($eventTypeId > 0) {
+            return $eventTypeId;
+        }
+
+        $query = $this->db->getQuery(true)
+                ->insert($this->db->quoteName('#__ra_event_types'))
+                ->columns($this->db->quoteName('description'))
+                ->values($this->db->quote($description));
+        $this->db->setQuery($query)->execute();
+        return (int) $this->db->insertid();
     }
 
     public function today() {

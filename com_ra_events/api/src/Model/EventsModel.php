@@ -231,7 +231,8 @@ class EventsModel extends ListModel {
                     }
                 }
 
-                $item->event_type_id = !empty($textValue) ? implode(', ', $textValue) : $item->event_type_id;
+                $item->event_type = !empty($textValue) ? implode(', ', $textValue) : '';
+                unset($item->event_type_id);
             }
         }
 
