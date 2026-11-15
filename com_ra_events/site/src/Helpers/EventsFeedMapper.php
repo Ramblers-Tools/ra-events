@@ -96,7 +96,8 @@ class EventsFeedMapper {
             'places_taken' => max(0, (int) ($row['places_taken'] ?? 0)),
             'requires_payment' => (int) ($row['requires_payment'] ?? 0) === 1,
             'waiting_list' => (int) ($row['waiting_list_enabled'] ?? 0) === 1,
-            'info' => self::plainText($row['booking_info'] ?? null),
+            // No booking_info: it's for payment details, which the website only shows to members
+            // making a booking, so it stays out of this public feed.
         ], fn($v) => $v !== null);
     }
 

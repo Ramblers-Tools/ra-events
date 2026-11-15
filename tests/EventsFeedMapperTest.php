@@ -51,7 +51,7 @@ check($e['contact_name'] === 'Sam Organiser', 'contact');
 check($e['url'] === 'https://example.org.uk/index.php?option=com_ra_events&view=event&id=42', 'url: ' . $e['url']);
 check($e['booking'] === [
     'bookable' => true, 'max_places' => 40, 'places_taken' => 12,
-    'requires_payment' => true, 'waiting_list' => false, 'info' => '£25, pay by 1 December.',
+    'requires_payment' => true, 'waiting_list' => false,
 ], 'booking: ' . json_encode($e['booking']));
 
 // Summer time, and times written with a dot.

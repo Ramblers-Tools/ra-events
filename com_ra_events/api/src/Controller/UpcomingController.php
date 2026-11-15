@@ -53,7 +53,7 @@ class UpcomingController extends BaseController {
                 ->select([
                     'a.id', 'a.title', 'a.event_date', 'a.event_date_end', 'a.event_time', 'a.details',
                     'a.location', 'a.state', 'a.bookable', 'a.max_bookings', 'a.requires_payment',
-                    'a.waiting_list_enabled', 'a.booking_info',
+                    'a.waiting_list_enabled',
                     't.description AS event_type',
                     'c.name AS contact_name',
                     '(' . $placesTaken . ') AS places_taken',
