@@ -11,6 +11,7 @@
  * 04/02/26 CB change multibook butoon to form_submit
  * 25/02/26 CB don't show Multibook if custom gfileds are present
  * 15/11/26 RH waitlisted users get "Remove from wait list", not the previous row's button
+ * 15/11/26 RH Status column uses BookingHelper::showState() badges
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -167,7 +168,7 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
 //                                $count = $this->toolsHelper->getValue($sql);
 //                                echo '<td>' . $count . '</td>';
 
-                        echo '<td>' . $item->title . '</td>';
+                        echo '<td>' . BookingHelper::showState($item->state, $item->is_paid, $this->event->requires_payment, true) . '</td>';
 
                         echo '<td>';
                         if ($item->requireReset == 0) {

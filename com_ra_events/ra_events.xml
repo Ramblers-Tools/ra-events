@@ -48,6 +48,7 @@
     15/11/26 RH version 2.16.0 - public upcoming events feed for the Ramblers Tools app (GET /api/index.php/v1/ra_events/upcoming): this site's own confirmed and cancelled events, with places taken and whether payment is needed; booking information is left out, as it's for payment details
     15/11/26 RH version 2.16.1 - Edit link on each event in the events list for the organiser (or anyone with core.edit); organisers can see and open their own events while awaiting review (previously a 403 straight after creating one); the badge and Edit link also show in the "all" and "committee" list layouts; booking counts on the event page are right for unpublished events, and no new bookings can be made on an unpublished event (buttons hidden, and refused when the booking is saved); fix lookupContact using $sql before it was set
     15/11/26 RH version 2.16.2 - Select Users: a waitlisted user showed the previous row's button (e.g. "Add to wait list") because state -1 had no case; now shows "Remove from wait list", as Show Bookings offers. Confirm there now returns to the same event's list
+    15/11/26 RH version 2.16.3 - booking status shown as coloured badges everywhere (Show Bookings, event page, member's bookings, Manage My Booking, Select Users, admin, confirmation email): Provisional amber, Confirmed green, Confirmed (Unpaid) orange when the event needs payment, Confirmed (Paid) green, Waitlisted blue, Cancelled grey
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -58,7 +59,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.16.2</version>
+    <version>2.16.3</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	

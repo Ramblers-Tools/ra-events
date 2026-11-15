@@ -9,6 +9,7 @@
  * 07/05/25 CB include name of partner from bookings
  * 07/07/25 CB use sub-query
  * 21/07/25 CB correct setup of subquery
+ * 15/11/26 RH select b.is_paid for the Status badge
  */
 
 namespace Ramblers\Component\Ra_events\Site\Model;
@@ -118,7 +119,7 @@ class ProfilesModel extends ListModel {
 
         $event_id = Factory::getApplication()->getUserState('com_ra_events.profiles.event_id', 0);
         $booking_subquery = $this->_db->getQuery(true);
-        $booking_subquery->select('user_id, b.id, b.state,s.title, partner')
+        $booking_subquery->select('user_id, b.id, b.state,s.title, partner, b.is_paid')
                 ->from('`#__ra_bookings` AS b')
                 ->innerjoin('`#__ra_event_states` AS s ON s.id = b.state ')
                 ->where('event_id = ' . $event_id);
@@ -126,7 +127,7 @@ class ProfilesModel extends ListModel {
         $query = $this->_db->getQuery(true);
         $query->select('u.id, u.name, u.email,u.username, u.requireReset')
                 ->select('p.home_group,p.preferred_name')
-                ->select('b.user_id, b.id AS booking_id, b.partner, b.state, b.title')
+                ->select('b.user_id, b.id AS booking_id, b.partner, b.state, b.title, b.is_paid')
                 ->from('`#__users` AS `u`')
                 ->leftjoin('(' . $booking_subquery . ') AS b ON b.user_id = u.id')
                 ->innerjoin('`#__ra_profiles`' . ' AS p ON p.id = u.id')
