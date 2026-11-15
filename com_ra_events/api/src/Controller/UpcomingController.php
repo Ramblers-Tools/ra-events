@@ -56,11 +56,14 @@ class UpcomingController extends BaseController {
                     'a.waiting_list_enabled',
                     't.description AS event_type',
                     'c.name AS contact_name',
+                    // Only whether the contact can be emailed; the address itself is never sent.
+                    "(u.email IS NOT NULL AND u.email <> '') AS contact_can_email",
                     '(' . $placesTaken . ') AS places_taken',
                 ])
                 ->from($db->quoteName('#__ra_events', 'a'))
                 ->leftJoin($db->quoteName('#__ra_event_types', 't') . ' ON t.id = a.event_type_id')
                 ->leftJoin($db->quoteName('#__contact_details', 'c') . ' ON c.id = a.contact_id')
+                ->leftJoin($db->quoteName('#__users', 'u') . ' ON u.id = c.user_id')
                 // Confirmed (1) and cancelled (-2); not provisional (0).
                 ->where('a.state IN (1, -2)')
                 // This site's own events, not ones shared in from other groups.
