@@ -9,6 +9,7 @@
  * 30/10/23 CB extend AdminModel, not ItemModel
  * 23/03/25 CB use getCurrentUser
  * 16/06/25 CB set up api site
+ * 15/11/26 RH the organiser may open their own event while it's awaiting review
  */
 
 namespace Ramblers\Component\Ra_events\Site\Model;
@@ -25,6 +26,7 @@ use \Joomla\CMS\Helper\TagsHelper;
 use \Joomla\CMS\Object\CMSObject;
 use \Joomla\CMS\User\CurrentUserInterface;
 use \Joomla\CMS\User\UserFactoryInterface;
+use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 /**
@@ -79,6 +81,22 @@ class EventModel extends ItemModel implements CurrentUserInterface {
     }
 
     /**
+     * Whether the current user is the organiser of an event, i.e. the event's
+     * contact record is linked to their user account.
+     *
+     * @param   integer  $contact_id  The event's contact_id
+     *
+     * @return  boolean
+     */
+    protected function isOwnEvent($contact_id) {
+        if ((int) $contact_id <= 0 || $this->getCurrentUser()->id <= 0) {
+            return false;
+        }
+        $eventsHelper = new EventsHelper;
+        return (int) $eventsHelper->lookupContactid() == (int) $contact_id;
+    }
+
+    /**
      * Method to get an object.
      *
      * @param   integer $id The id of the object to get.
@@ -103,8 +121,11 @@ class EventModel extends ItemModel implements CurrentUserInterface {
 
 
                 // Check published state.
+                // The organiser may still open their own event while it's awaiting
+                // review (state 0), e.g. straight after creating it.
                 if ($published = $this->getState('filter.published')) {
-                    if (isset($table->state) && $table->state != $published) {
+                    if (isset($table->state) && $table->state != $published
+                            && !($table->state == 0 && $this->isOwnEvent($table->contact_id))) {
                         throw new \Exception(Text::_('COM_RA_EVENTS_ITEM_NOT_LOADED'), 403);
                     }
                 }

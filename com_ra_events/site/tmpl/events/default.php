@@ -15,6 +15,8 @@
  * 16/06/25 CB If event is from a different site, show details of it in colour
  * 30/06/25 CB pass layout as parameter to Event, use Tools for email
  * 04/08/25 CB only show Group and Number of Bookings if values are present
+ * 15/11/26 RH Edit link on each event the user may edit; organisers see their own
+ *             events awaiting review; use the view's single ToolsHelper
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -24,8 +26,6 @@ use \Joomla\CMS\HTML\HTMLHelper;
 use \Joomla\CMS\Uri\Uri;
 use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\Layout\LayoutHelper;
-use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
-use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 HTMLHelper::_('bootstrap.tooltip');
 HTMLHelper::_('behavior.multiselect');
@@ -42,17 +42,16 @@ $user = Factory::getApplication()->getSession()->get('user');
 $userId = $user->get('id');
 $listOrder = $this->state->get('list.ordering');
 $listDirn = $this->state->get('list.direction');
-$eventsHelperCreate = new EventsHelper;
-$canCreate = ($user->id > 0) && !is_null($eventsHelperCreate->lookupContactid());
-$canEdit = $user->authorise('core.edit', 'com_ra_events') && file_exists(JPATH_COMPONENT . DIRECTORY_SEPARATOR . 'forms' . DIRECTORY_SEPARATOR . 'eventform.xml');
+// Organisers (logged-in users with a linked contact record) may create events
+$canCreate = ($this->ownContactId > 0);
 $canCheckin = $user->authorise('core.manage', 'com_ra_events');
 $canChange = $user->authorise('core.edit.state', 'com_ra_events');
 $canDelete = $user->authorise('core.delete', 'com_ra_events');
+$toolsHelper = $this->toolsHelper;
 
 if ($canCreate) {
-    $toolsHelperCreate = new ToolsHelper();
     $create_target = 'index.php?option=com_ra_events&task=eventform.add&Itemid=' . $this->menu_id;
-    echo $toolsHelperCreate->buildButton($create_target, 'Create Event', false, 'darkgreen');
+    echo $toolsHelper->buildButton($create_target, 'Create Event', false, 'darkgreen');
 }
 
 // Import CSS
@@ -61,7 +60,6 @@ $wa->registerAndUseStyle('ramblers', 'com_ra_tools/ramblers.css');
 
 $target = "index.php?option=com_ra_events&view=event&tmpl=component&Itemid=" . $this->menu_id . '&id=';
 $target_email = 'index.php?option=com_ra_tools&task=system.eventOrganiser&id=';
-$toolsHelper = new ToolsHelper();
 
 // Find the next scheduled Event
 // first find yesterday's date
@@ -133,7 +131,18 @@ $next_id = $toolsHelper->getValue($sql);
                     echo '<a href = "';
                     echo Route::_($link) . '">';
                     echo rtrim($item->title) . PHP_EOL;                      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                    echo '</a><br>' . PHP_EOL;
+                    echo '</a>';
+                    if ($item->state != 1) {
+                        // Only the organiser's own events reach here unpublished (see EventsModel)
+                        echo ' <span class="badge bg-warning text-dark">Awaiting review</span>';
+                    }
+                    if ($this->canEditEvent($item)) {
+                        $edit_target = 'index.php?option=com_ra_events&task=eventform.edit&id=' . (int) $item->id;
+                        $edit_target .= '&Itemid=' . $this->menu_id;
+                        echo ' <a href="' . Route::_($edit_target) . '" title="Edit this event">';
+                        echo '<span class="icon-edit" aria-hidden="true"></span> Edit</a>';
+                    }
+                    echo '<br>' . PHP_EOL;
                     if (!$item->location == '') {
                         echo '<b>Location </b>';
 //. " at " . $item->location . '</h4>';

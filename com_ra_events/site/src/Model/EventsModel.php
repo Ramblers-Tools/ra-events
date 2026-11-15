@@ -21,6 +21,7 @@
  * 19/01/26 CB debug sorting (grid.sort)
  * 20/01/26 CB remove diagnostic display
  * 04/02/26 CB return actual fields for details/reports/minutes
+ * 15/11/26 RH organisers also see their own events awaiting review
  */
 
 namespace Ramblers\Component\Ra_events\Site\Model;
@@ -36,6 +37,7 @@ use \Joomla\CMS\Helper\TagsHelper;
 use \Joomla\CMS\Layout\FileLayout;
 use \Joomla\Database\ParameterType;
 use \Joomla\Utilities\ArrayHelper;
+use \Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
 use \Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 /**
@@ -164,13 +166,23 @@ class EventsModel extends ListModel {
         $query->select('c.name', 'contact');
         $query->leftJoin('#__ra_event_types AS event_type ON event_type.id = a.event_type_id');
         $query->leftJoin('#__contact_details AS c ON c.id = a.contact_id');
-        $query->where('a.state = 1');
+        // Published events, once their publication date has come. An organiser also
+        // sees their own events that are still awaiting review (state 0 - new events
+        // from the front-end form start unpublished), so they can check and edit them.
+        $visible = '(a.state = 1 AND DATEDIFF(a.publication_date, CURRENT_DATE)<=0)';
+        $ownContactId = 0;
+        if (Factory::getApplication()->getIdentity()->id > 0) {
+            $eventsHelper = new EventsHelper;
+            $ownContactId = (int) $eventsHelper->lookupContactid();
+        }
+        if ($ownContactId > 0) {
+            $visible .= ' OR (a.state = 0 AND a.contact_id = ' . $ownContactId . ')';
+        }
+        $query->where('(' . $visible . ')');
         // The Event Type will have been set up in the __construct function, depending on the menu parameter
         if ($this->event_type_id != 0) {
             $query->where('a.event_type_id=' . $this->event_type_id);
         }
-        // Don't show events until their publication date
-        $query->where('DATEDIFF(a.publication_date, CURRENT_DATE)<=0');
         // Except for Committee meetings & Inspections, only show future events
         if ($this->event_type_id !== 1) {
             $query->where('DATEDIFF(a.event_date, CURRENT_DATE)>=0');
