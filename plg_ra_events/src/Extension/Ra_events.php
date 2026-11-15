@@ -64,6 +64,17 @@ class Ra_events extends CMSPlugin implements SubscriberInterface
 		
 // Add special case apis (eg public access)		
 
+		// The events feed for the Ramblers Tools app. Public: it only shows published events.
+		$router->addRoute(new Route(
+			['GET'], 'v1/ra_events/upcoming', 'upcoming.feed',
+			[],
+			[
+				'component' => 'com_ra_events',
+				'public'    => true,
+				'format'    => ['application/json', 'application/vnd.api+json'],
+			]
+		));
+
 		$router->addRoutes ( [
 			new Route
 				(
