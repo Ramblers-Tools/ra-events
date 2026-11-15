@@ -45,6 +45,7 @@
     05/10/26 RH version 2.15.2 - fix the print button on Show Reports giving a not-found error - showPrint() was passed $target before it was assigned, so the link had no URL
     06/10/26 RH version 2.15.3 - stop a double-submitted booking form (or a second click on a Book button while a slow request runs) creating duplicate bookings - refused server-side, and the Submit button now disables itself while saving
     13/10/26 RH version 2.15.4 - fix "Unknown column max_guests" aborting the install on sites upgrading from before 2.12.0 - migration blocks run newest gate first, so the ICE block ran before the one that creates max_guests and its ALTER ... AFTER max_guests failed. Dropped that positional clause and the two older ones with the same cross-block dependency
+    15/11/26 RH version 2.16.0 - public upcoming events feed for the Ramblers Tools app (GET /api/index.php/v1/ra_events/upcoming): this site's own confirmed and cancelled events, with places taken and whether payment is needed; booking information is left out, as it's for payment details
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -55,7 +56,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.15.4</version>
+    <version>2.16.0</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	
