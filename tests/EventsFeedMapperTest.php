@@ -24,6 +24,7 @@ function row(array $changes = []): array {
         'details' => '<p>Three courses at the Bulls Head.</p><p>Vegetarian&nbsp;option.</p><script>x()</script>',
         'location' => "The Bulls Head,<br>Macclesfield",
         'contact_name' => 'Sam Organiser',
+        'contact_can_email' => 1,
         'state' => 1,
         'bookable' => 1,
         'max_bookings' => 40,
@@ -48,6 +49,10 @@ check($e['all_day'] === false, 'has a time');
 check($e['details'] === "Three courses at the Bulls Head.\n\nVegetarian option.", 'details: ' . json_encode($e['details']));
 check($e['location'] === "The Bulls Head,\nMacclesfield", 'location: ' . json_encode($e['location']));
 check($e['contact_name'] === 'Sam Organiser', 'contact');
+check($e['contact_url'] === 'https://example.org.uk/index.php?option=com_ra_tools&task=system.eventOrganiser&id=42', 'contact_url: ' . $e['contact_url']);
+check(!isset(EventsFeedMapper::event(row(['contact_can_email' => 0]), $site)['contact_url']), 'no contact_url without an email');
+check(!isset(EventsFeedMapper::event(row(['contact_can_email' => null]), $site)['contact_url']), 'no contact_url without a contact');
+check(!isset(EventsFeedMapper::event(row(), '')['contact_url']), 'no contact_url without a site address');
 check($e['url'] === 'https://example.org.uk/index.php?option=com_ra_events&view=event&id=42', 'url: ' . $e['url']);
 check($e['booking'] === [
     'bookable' => true, 'max_places' => 40, 'places_taken' => 12,

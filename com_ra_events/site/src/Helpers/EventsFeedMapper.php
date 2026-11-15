@@ -78,6 +78,11 @@ class EventsFeedMapper {
             'details' => self::plainText($row['details'] ?? null),
             'location' => self::plainText($row['location'] ?? null),
             'contact_name' => self::text($row['contact_name'] ?? null),
+            // The website's form that emails the contact (RA Tools looks up their address), as
+            // the envelope on the event page. Only when the contact has an email address.
+            'contact_url' => $siteRoot !== '' && (int) ($row['contact_can_email'] ?? 0) === 1
+                ? rtrim($siteRoot, '/') . '/index.php?option=com_ra_tools&task=system.eventOrganiser&id=' . rawurlencode($id)
+                : null,
             'url' => $siteRoot !== '' ? rtrim($siteRoot, '/') . '/index.php?option=com_ra_events&view=event&id=' . rawurlencode($id) : null,
             'booking' => $cancelled ? null : self::booking($row),
         ];
