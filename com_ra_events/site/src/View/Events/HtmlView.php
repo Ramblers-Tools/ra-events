@@ -25,6 +25,7 @@ use Joomla\CMS\Component\ComponentHelper;
 use \Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use \Joomla\CMS\Factory;
 use \Joomla\CMS\Language\Text;
+use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\User\CurrentUserInterface;
 use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
@@ -187,6 +188,29 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
             return true;
         }
         return $this->ownContactId > 0 && $this->ownContactId == (int) $item->contact_id;
+    }
+
+    /**
+     * HTML to follow an event's title in any of the list layouts: an "Awaiting
+     * review" badge if it's unpublished (only the organiser's own events reach the
+     * list unpublished - see EventsModel), and an Edit link if the user may edit it.
+     *
+     * @param   object  $item  A row from EventsModel::getItems()
+     *
+     * @return  string
+     */
+    public function titleExtras($item) {
+        $html = '';
+        if ($item->state != 1) {
+            $html .= ' <span class="badge bg-warning text-dark">Awaiting review</span>';
+        }
+        if ($this->canEditEvent($item)) {
+            $edit_target = 'index.php?option=com_ra_events&task=eventform.edit&id=' . (int) $item->id;
+            $edit_target .= '&Itemid=' . (int) $this->menu_id;
+            $html .= ' <a href="' . Route::_($edit_target) . '" title="Edit this event">';
+            $html .= '<span class="icon-edit" aria-hidden="true"></span> Edit</a>';
+        }
+        return $html;
     }
 
 }

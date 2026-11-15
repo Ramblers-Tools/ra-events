@@ -132,16 +132,7 @@ $next_id = $toolsHelper->getValue($sql);
                     echo Route::_($link) . '">';
                     echo rtrim($item->title) . PHP_EOL;                      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     echo '</a>';
-                    if ($item->state != 1) {
-                        // Only the organiser's own events reach here unpublished (see EventsModel)
-                        echo ' <span class="badge bg-warning text-dark">Awaiting review</span>';
-                    }
-                    if ($this->canEditEvent($item)) {
-                        $edit_target = 'index.php?option=com_ra_events&task=eventform.edit&id=' . (int) $item->id;
-                        $edit_target .= '&Itemid=' . $this->menu_id;
-                        echo ' <a href="' . Route::_($edit_target) . '" title="Edit this event">';
-                        echo '<span class="icon-edit" aria-hidden="true"></span> Edit</a>';
-                    }
+                    echo $this->titleExtras($item);   // "Awaiting review" badge / Edit link
                     echo '<br>' . PHP_EOL;
                     if (!$item->location == '') {
                         echo '<b>Location </b>';

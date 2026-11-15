@@ -46,7 +46,7 @@
     06/10/26 RH version 2.15.3 - stop a double-submitted booking form (or a second click on a Book button while a slow request runs) creating duplicate bookings - refused server-side, and the Submit button now disables itself while saving
     13/10/26 RH version 2.15.4 - fix "Unknown column max_guests" aborting the install on sites upgrading from before 2.12.0 - migration blocks run newest gate first, so the ICE block ran before the one that creates max_guests and its ALTER ... AFTER max_guests failed. Dropped that positional clause and the two older ones with the same cross-block dependency
     15/11/26 RH version 2.16.0 - public upcoming events feed for the Ramblers Tools app (GET /api/index.php/v1/ra_events/upcoming): this site's own confirmed and cancelled events, with places taken and whether payment is needed; booking information is left out, as it's for payment details
-    15/11/26 RH version 2.16.1 - Edit link on each event in the events list for the organiser (or anyone with core.edit); organisers can see and open their own events while awaiting review (previously a 403 straight after creating one); fix lookupContact using $sql before it was set
+    15/11/26 RH version 2.16.1 - Edit link on each event in the events list for the organiser (or anyone with core.edit); organisers can see and open their own events while awaiting review (previously a 403 straight after creating one); the badge and Edit link also show in the "all" and "committee" list layouts; booking counts on the event page are right for unpublished events, and no new bookings can be made on an event awaiting review; fix lookupContact using $sql before it was set
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
