@@ -15,6 +15,7 @@
  * 04/02/25 CB show 'Y' if agenda/reports/minutes exist, else show -
  * 05/02/26 CB Allow Committee Meetings to be sorted by Date
  * 05/02/16 CB correction for remote attachments
+ * 15/11/26 RH "Awaiting review" badge and Edit link after the title (view titleExtras())
  */ 
 // No direct access
 defined('_JEXEC') or die;
@@ -183,7 +184,7 @@ $target .= '&layout=' . $this->layout . '&id=';
                     //echo JRoute::_('index.php?option=com_ra_events&view=event&id=' . $item->id . '&Itemid=' . $this->menu_id) . '">';
                     echo Route::_($link) . '">';
                     echo $item->title;
-                    echo '</a></td>' . PHP_EOL;
+                    echo '</a>' . $this->titleExtras($item) . '</td>' . PHP_EOL;
 
                     if ($this->event_type_id == 1) {
 

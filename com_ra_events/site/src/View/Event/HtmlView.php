@@ -11,6 +11,7 @@
  * 30/06/25 CB store $layout;
  * 26/07/25 CB save input parameters in user state
  * 07/04/26 CB showButton
+ * 15/11/26 RH one ToolsHelper; "awaiting review" notice; $this->user in the edit check
  */
 
 namespace Ramblers\Component\Ra_events\Site\View\Event;
@@ -82,9 +83,14 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         // Find the type of event
         $this->event_type_id = $this->item->event_type_id;
 
-        $toolsHelper = new ToolsHelper;
-        $sql = 'SELECT description FROM #__ra_event_types WHERE id=' . $this->event_type_id;
-        $this->event_type = $toolsHelper->getValue($sql);
+        $this->toolsHelper = new ToolsHelper;
+        $sql = 'SELECT description FROM #__ra_event_types WHERE id=' . (int) $this->event_type_id;
+        $this->event_type = $this->toolsHelper->getValue($sql);
+
+        // Only the organiser (or an editor) gets this far with an unpublished event
+        if ($this->item->state == 0) {
+            $app->enqueueMessage('This event is awaiting review by an administrator, so it is not yet visible to others.', 'notice');
+        }
 
         $this->bookingHelper = new BookingHelper;
 
@@ -95,7 +101,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
 
 
         if ($this->_layout == 'edit') {
-            $authorised = $user->authorise('core.create', 'com_ra_events');
+            $authorised = $this->user->authorise('core.create', 'com_ra_events');
 
             if ($authorised !== true) {
                 throw new \Exception(Text::_('JERROR_ALERTNOAUTHOR'));
@@ -103,7 +109,6 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         }
 
         $this->_prepareDocument();
-        $this->toolsHelper = new ToolsHelper;
         parent::display($tpl);
     }
 

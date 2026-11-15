@@ -12,6 +12,7 @@
  * 02/12/24 CB change description to title
  * 19/02/25 CB set up $this->user from getCurrentUser
  * protected $layout;
+ * 15/11/26 RH one shared ToolsHelper; canEditEvent() for the list's Edit links; fix lookupContact
  *
  */
 
@@ -24,7 +25,9 @@ use Joomla\CMS\Component\ComponentHelper;
 use \Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use \Joomla\CMS\Factory;
 use \Joomla\CMS\Language\Text;
+use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\User\CurrentUserInterface;
+use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
 use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 
 /**
@@ -35,16 +38,19 @@ use Ramblers\Component\Ra_tools\Site\Helpers\ToolsHelper;
 class HtmlView extends BaseHtmlView implements CurrentUserInterface {
 
     protected $attachment_folder;
+    protected $canEditAll;
     protected $event_type_id;
     protected $event_type;
     protected $items;
     protected $layout;
     protected $max_chars;
     protected $menu_id;
+    protected $ownContactId;
     protected $pagination;
     protected $show_group;
     protected $state;
     protected $params;
+    protected $toolsHelper;
     protected $user;
 
     /**
@@ -77,12 +83,22 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         // Find the maximum number of characters to show from the details
         $this->max_chars = $this->params->get('events_max_chars', 500);
 
-        $toolsHelper = new ToolsHelper;
+        $this->toolsHelper = new ToolsHelper;
         if ($this->event_type_id == 0) {
             $this->event_type = 'Event';
         } else {
             $sql = 'SELECT description FROM #__ra_event_types WHERE id=' . $this->event_type_id;
-            $this->event_type = $toolsHelper->getValue($sql);
+            $this->event_type = $this->toolsHelper->getValue($sql);
+        }
+
+        // Who may edit what: the same rule as the Edit Event button on the event
+        // page and EventformModel - core.edit for any event, else the organiser
+        // for their own. Looked up once here rather than per row.
+        $this->canEditAll = $this->user->authorise('core.edit', 'com_ra_events');
+        $this->ownContactId = 0;
+        if ($this->user->id > 0) {
+            $eventsHelper = new EventsHelper;
+            $this->ownContactId = (int) $eventsHelper->lookupContactid();
         }
 
         $menu_params = $app->getMenu()->getActive()->getParams();
@@ -156,9 +172,45 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
     }
 
     public function lookupContact($contact_id) {
-        $sql .= 'SELECT name FROM #__contact_details WHERE id=' . $contact_id;
-        $toolsHelper = new ToolsHelper;
-        return $toolsHelper->getValue($sql);
+        $sql = 'SELECT name FROM #__contact_details WHERE id=' . (int) $contact_id;
+        return $this->toolsHelper->getValue($sql);
+    }
+
+    /**
+     * Whether the current user may edit this event: core.edit, or it's their own.
+     *
+     * @param   object  $item  A row from EventsModel::getItems()
+     *
+     * @return  boolean
+     */
+    public function canEditEvent($item) {
+        if ($this->canEditAll) {
+            return true;
+        }
+        return $this->ownContactId > 0 && $this->ownContactId == (int) $item->contact_id;
+    }
+
+    /**
+     * HTML to follow an event's title in any of the list layouts: an "Awaiting
+     * review" badge if it's unpublished (only the organiser's own events reach the
+     * list unpublished - see EventsModel), and an Edit link if the user may edit it.
+     *
+     * @param   object  $item  A row from EventsModel::getItems()
+     *
+     * @return  string
+     */
+    public function titleExtras($item) {
+        $html = '';
+        if ($item->state != 1) {
+            $html .= ' <span class="badge bg-warning text-dark">Awaiting review</span>';
+        }
+        if ($this->canEditEvent($item)) {
+            $edit_target = 'index.php?option=com_ra_events&task=eventform.edit&id=' . (int) $item->id;
+            $edit_target .= '&Itemid=' . (int) $this->menu_id;
+            $html .= ' <a href="' . Route::_($edit_target) . '" title="Edit this event">';
+            $html .= '<span class="icon-edit" aria-hidden="true"></span> Edit</a>';
+        }
+        return $html;
     }
 
 }

@@ -22,6 +22,7 @@
  * 25/02/26 CB changes to confirmation email
  * 06/04/26 CB move button to the top of the screen
  * 03/08/26 CB use ToolsHelper to encode token
+ * 15/11/26 RH booking counts no longer require a published event; no new bookings on one awaiting review
  */
 
 namespace Ramblers\Component\Ra_events\Site\Helpers;
@@ -249,7 +250,9 @@ class BookingHelper {
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__ra_bookings AS b ON b.event_id = e.id  ';
         $sql .= 'WHERE e.id=' . (INT) $event_id . ' ';
-        $sql .= 'AND e.state=1 ';
+        // No e.state filter: the event page is the only caller and can show an
+        // unpublished event (to an editor, or its organiser while it awaits review),
+        // which still needs its real count.
         return $this->toolsHelper->getValue($sql);
     }
 
@@ -1101,11 +1104,12 @@ class BookingHelper {
             return '';
         }
 // get details of the Event
-        $sql = 'SELECT e.*, c.user_id, s.* ';
+        // event_state is aliased because s.* can overwrite e.state
+        $sql = 'SELECT e.*, c.user_id, s.*, e.state AS event_state ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'LEFT JOIN #__contact_details AS c ON c.id = e.contact_id ';
         $sql .= 'LEFT JOIN #__ra_api_sites AS s ON s.id = e.api_site_id ';
-        $sql .= 'WHERE e.id=' . $event_id . ' ';
+        $sql .= 'WHERE e.id=' . (INT) $event_id . ' ';
 
         $event = $this->toolsHelper->getItem($sql);
         if (is_null($event)) {
@@ -1116,6 +1120,8 @@ class BookingHelper {
         $event_date = new \DateTime($event->event_date);
         $today = new \DateTime('today');
         $is_future_event = ($event_date >= $today);
+        // New bookings only on a published event (not one awaiting review)
+        $is_open = ($event->event_state == 1);
 
         // get any bookings, confirmed or provisional
         $tot_bookings = $this->countActiveBookings($event_id);
@@ -1123,8 +1129,7 @@ class BookingHelper {
         $sql = 'SELECT SUM(b.num_places) AS `tot` ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__ra_bookings AS b ON b.event_id = e.id  ';
-        $sql .= 'WHERE e.id=' . $event_id . ' ';
-        $sql .= 'AND e.state=1 ';
+        $sql .= 'WHERE e.id=' . (INT) $event_id . ' ';
         $sql .= 'AND b.state=1 ';
         $confirmed_bookings = $this->toolsHelper->getValue($sql);
 
@@ -1204,7 +1209,7 @@ class BookingHelper {
                 $action_buttons .= $this->toolsHelper->buildButton($link, $label, false, 'sunset');
             }
 
-            if ($is_future_event) {
+            if ($is_future_event && $is_open) {
                 $select = $target . '&task=booking.selectUsers&event_id=' . $event_id;
                 $action_buttons .= $this->toolsHelper->buildButton($select, 'Select Users');
             }
@@ -1279,6 +1284,12 @@ class BookingHelper {
             $manageTarget = $target . '&view=managebooking&id=' . $booking->id . '&event_id=' . $event_id;
             $details .= $this->toolsHelper->buildButton($manageTarget, 'Manage My Booking', false, 'grey');
             $details .= '<br>';
+        } elseif (!$is_open) {
+            if ($event->event_state == 0) {
+                $details .= '<br>Bookings open once this event has been reviewed and published.<br>';
+            } else {
+                $details .= '<br>This event is not open for bookings.<br>';
+            }
         } elseif ($is_future_event && !$is_full) {
             if (($event->max_bookings - $confirmed_bookings - $provisional_bookings ) < 2) {
                 $details .= '<br><b>WARNING: <b> If you make a booking,and the existing provisional bookings are accepted, ';
