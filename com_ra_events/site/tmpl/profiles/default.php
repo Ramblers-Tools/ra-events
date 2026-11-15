@@ -10,6 +10,7 @@
  * 21/07/25 CB use $this->user
  * 04/02/26 CB change multibook butoon to form_submit
  * 25/02/26 CB don't show Multibook if custom gfileds are present
+ * 15/11/26 RH waitlisted users get "Remove from wait list", not the previous row's button
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -95,7 +96,11 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
             <tbody>
                 <?php
                 foreach ($this->items as $i => $item) :
+                    // Reset per row: a state with no branch below must show no button,
+                    // not the previous row's (a waitlisted user used to get "Add to wait list")
                     $action = '';
+                    $label = '';
+                    $colour = '';
 
                     // See if this user is currently booked
                     $check_visible = false;
@@ -120,6 +125,11 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
                         $colour = 'sunrise';
                     } elseif ($item->state == 1) {
                         $label = 'Cancel';
+                        $action = 'cancelBooking';
+                        $colour = 'red';
+                    } elseif ($item->state == -1) {
+                        // Waitlisted - as on Show Bookings, the only action is to cancel
+                        $label = 'Remove from wait list';
                         $action = 'cancelBooking';
                         $colour = 'red';
                     }
@@ -168,7 +178,7 @@ $canDelete = $this->user->authorise('core.delete', 'com_ra_events');
                                 $message = 'This event is full and the waiting list is not enabled. Book anyway?';
                                 echo '<a class="' . $class . '" href="' . $target . '" ';
                                 echo 'onclick="return confirm(\'' . $message . '\');" target="_self">' . $label . '</a>';
-                            } else {
+                            } elseif ($action != '') {
                                 echo $this->toolsHelper->buildButton($target, $label, false, $colour);
                             }
                         }

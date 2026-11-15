@@ -11,6 +11,7 @@
  * 07/07/25 CB stub for multiBook
  * 04/11/26 CB set id=0 for view bookingform
  * 04/02/26 CB Multibook: use sub-query to check for existing booking, and allow provisional booking to be confirmed
+ * 15/11/26 RH confirmBooking: read event_id, so it returns to the right Select Users list
  */
 
 namespace Ramblers\Component\Ra_events\Site\Controller;
@@ -74,6 +75,7 @@ class ProfilesController extends FormController {
 
     public function confirmBooking() {
         $id = $this->app->input->getInt('id', '0');
+        $event_id = $this->app->input->getInt('event_id', '0');
         $menu_id = $this->app->input->getInt('Itemid', '0');
 //        die('user_id=' . $user_id);
         $this->bookingHelper->confirmBooking($id);
