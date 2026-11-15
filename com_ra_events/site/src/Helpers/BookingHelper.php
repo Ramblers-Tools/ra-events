@@ -23,6 +23,7 @@
  * 06/04/26 CB move button to the top of the screen
  * 03/08/26 CB use ToolsHelper to encode token
  * 15/11/26 RH booking counts no longer require a published event; no new bookings on one awaiting review
+ * 15/11/26 RH showState(): coloured badges, "Confirmed (Unpaid)" when payment is due; getOwnedBooking returns is_paid/requires_payment
  */
 
 namespace Ramblers\Component\Ra_events\Site\Helpers;
@@ -162,8 +163,8 @@ class BookingHelper {
      * @throws  \Exception
      */
     public function getOwnedBooking($booking_id) {
-        $sql = 'SELECT b.id, b.event_id, b.user_id, b.num_places, b.partner, b.state, ';
-        $sql .= 'e.title, e.event_date, e.multi_guest_enabled, e.max_guests, e.max_bookings ';
+        $sql = 'SELECT b.id, b.event_id, b.user_id, b.num_places, b.partner, b.state, b.is_paid, ';
+        $sql .= 'e.title, e.event_date, e.multi_guest_enabled, e.max_guests, e.max_bookings, e.requires_payment ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id ';
         $sql .= 'WHERE b.id=' . (int) $booking_id;
@@ -1348,30 +1349,57 @@ class BookingHelper {
         }
     }
 
+    /**
+     * A booking's status as a coloured badge. Green means nothing more to do;
+     * amber/orange means someone needs to act (confirm a provisional booking,
+     * or collect payment); blue is the wait list; grey is cancelled.
+     * Inline styles, so it looks the same on the site, in the admin and in emails.
+     *
+     * @param   mixed    $state             Booking state (0, 1, -1, -2)
+     * @param   boolean  $is_paid           Whether the booking is marked as paid
+     * @param   boolean  $requires_payment  Whether the event requires payment
+     * @param   boolean  $plain             True for just the badge; false wraps it in
+     *                                      a paragraph with a "Status:" label
+     *
+     * @return  string
+     */
     public static function showState($state, $is_paid = false, $requires_payment = false, $plain = false) {
-        if ($state == '') {
+        if ($state === '' || is_null($state)) {
             return '';
         }
+        // background, text colour
+        $green = array('#2e7d32', '#ffffff');
         if ($state == 0) {
-            $colour = 'orange';
+            $colours = array('#ffc107', '#212529');   // amber
             $label = 'Provisional';
         } elseif ($state == 1) {
-            $colour = 'green';
-            $label = ($requires_payment && $is_paid) ? 'Confirmed (Paid)' : 'Confirmed';
+            if (!$requires_payment) {
+                $colours = $green;
+                $label = 'Confirmed';
+            } elseif ($is_paid) {
+                $colours = $green;
+                $label = 'Confirmed (Paid)';
+            } else {
+                $colours = array('#c45500', '#ffffff');   // orange
+                $label = 'Confirmed (Unpaid)';
+            }
         } elseif ($state == -2) {
-            $colour = 'red';
+            $colours = array('#6c757d', '#ffffff');   // grey
             $label = 'Cancelled';
         } elseif ($state == -1) {
-            $colour = 'steelblue';
+            $colours = array('#2f6c9f', '#ffffff');   // blue
             $label = 'Waitlisted';
         } else {
-            $colour = '';
-            $label = $state;
+            $colours = array('#e9ecef', '#212529');
+            $label = htmlspecialchars((string) $state);
         }
+        $badge = '<span style="display:inline-block; padding:2px 8px; border-radius:10px; ';
+        $badge .= 'font-weight:600; font-size:0.9em; white-space:nowrap; ';
+        $badge .= 'background:' . $colours[0] . '; color:' . $colours[1] . ';">' . $label . '</span>';
         if ($plain) {
-            return '<span style="color:' . $colour . '"><b>' . $label . '</b></span>';
+            return $badge;
         }
-        return '<p style="color:' . $colour . '"><b>Status: </b>' . $label . '</p>';
+        return '<p><b>Status: </b>' . $badge . '</p>';
     }
 
     private function statusDescription($count, $status) {
