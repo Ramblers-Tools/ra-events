@@ -7,6 +7,7 @@
  * @copyright  2026 Ramblers Tools
  * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 26/08/26 RH created - self-service Manage My Booking
+ * 15/11/26 RH Status shows Confirmed (Unpaid)/(Paid) badge, no doubled "Status:"
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -26,7 +27,7 @@ $existingGuestCount = count($existingGuests);
 echo '<h3>Manage My Booking</h3>';
 echo '<h4>' . $item->title . '</h4>';
 echo '<p>' . HTMLHelper::_('date', $item->event_date, 'l d M y') . '</p>';
-echo '<p>Status: ' . BookingHelper::showState($item->state) . '</p>';
+echo '<p>Status: ' . BookingHelper::showState($item->state, $item->is_paid, $item->requires_payment, true) . '</p>';
 ?>
 
 <form id="form-managebooking"

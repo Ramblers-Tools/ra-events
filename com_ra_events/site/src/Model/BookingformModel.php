@@ -13,6 +13,7 @@
  * 03/11/25 CB change filter from word to string
  * 13/11/25 CB correct declaration of toolsHelper
  * 24/02/26 Send email confirmation
+ * 15/11/26 RH refuse a new booking unless the event is published
  */
 
 namespace Ramblers\Component\Ra_events\Site\Model;
@@ -365,6 +366,16 @@ class BookingformModel extends FormModel implements CurrentUserInterface {
         }
 
         if (empty($id)) {
+            // New bookings only on a published event. The Book/waiting-list buttons
+            // are already hidden otherwise (BookingHelper::showBookings), but a
+            // hand-built link would still reach this form.
+            $sql = 'SELECT state FROM #__ra_events WHERE id=' . (int) $data['event_id'];
+            $event_state = $toolsHelper->getValue($sql);
+            if ($event_state === null || (int) $event_state !== 1) {
+                $this->setError('This event is not open for bookings');
+                return false;
+            }
+
             // A slow response invites a second click on Submit. If this person already
             // has a live booking on this event, hand that one back rather than creating
             // a duplicate - and don't re-send the acknowledgement for it either.

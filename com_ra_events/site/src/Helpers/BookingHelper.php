@@ -22,6 +22,8 @@
  * 25/02/26 CB changes to confirmation email
  * 06/04/26 CB move button to the top of the screen
  * 03/08/26 CB use ToolsHelper to encode token
+ * 15/11/26 RH booking counts no longer require a published event; no new bookings on one awaiting review
+ * 15/11/26 RH showState(): coloured badges, "Confirmed (Unpaid)" when payment is due; getOwnedBooking returns is_paid/requires_payment
  */
 
 namespace Ramblers\Component\Ra_events\Site\Helpers;
@@ -161,8 +163,8 @@ class BookingHelper {
      * @throws  \Exception
      */
     public function getOwnedBooking($booking_id) {
-        $sql = 'SELECT b.id, b.event_id, b.user_id, b.num_places, b.partner, b.state, ';
-        $sql .= 'e.title, e.event_date, e.multi_guest_enabled, e.max_guests, e.max_bookings ';
+        $sql = 'SELECT b.id, b.event_id, b.user_id, b.num_places, b.partner, b.state, b.is_paid, ';
+        $sql .= 'e.title, e.event_date, e.multi_guest_enabled, e.max_guests, e.max_bookings, e.requires_payment ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id ';
         $sql .= 'WHERE b.id=' . (int) $booking_id;
@@ -249,7 +251,9 @@ class BookingHelper {
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__ra_bookings AS b ON b.event_id = e.id  ';
         $sql .= 'WHERE e.id=' . (INT) $event_id . ' ';
-        $sql .= 'AND e.state=1 ';
+        // No e.state filter: the event page is the only caller and can show an
+        // unpublished event (to an editor, or its organiser while it awaits review),
+        // which still needs its real count.
         return $this->toolsHelper->getValue($sql);
     }
 
@@ -1101,11 +1105,12 @@ class BookingHelper {
             return '';
         }
 // get details of the Event
-        $sql = 'SELECT e.*, c.user_id, s.* ';
+        // event_state is aliased because s.* can overwrite e.state
+        $sql = 'SELECT e.*, c.user_id, s.*, e.state AS event_state ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'LEFT JOIN #__contact_details AS c ON c.id = e.contact_id ';
         $sql .= 'LEFT JOIN #__ra_api_sites AS s ON s.id = e.api_site_id ';
-        $sql .= 'WHERE e.id=' . $event_id . ' ';
+        $sql .= 'WHERE e.id=' . (INT) $event_id . ' ';
 
         $event = $this->toolsHelper->getItem($sql);
         if (is_null($event)) {
@@ -1116,6 +1121,8 @@ class BookingHelper {
         $event_date = new \DateTime($event->event_date);
         $today = new \DateTime('today');
         $is_future_event = ($event_date >= $today);
+        // New bookings only on a published event (not one awaiting review)
+        $is_open = ($event->event_state == 1);
 
         // get any bookings, confirmed or provisional
         $tot_bookings = $this->countActiveBookings($event_id);
@@ -1123,8 +1130,7 @@ class BookingHelper {
         $sql = 'SELECT SUM(b.num_places) AS `tot` ';
         $sql .= 'FROM #__ra_events AS e ';
         $sql .= 'INNER JOIN #__ra_bookings AS b ON b.event_id = e.id  ';
-        $sql .= 'WHERE e.id=' . $event_id . ' ';
-        $sql .= 'AND e.state=1 ';
+        $sql .= 'WHERE e.id=' . (INT) $event_id . ' ';
         $sql .= 'AND b.state=1 ';
         $confirmed_bookings = $this->toolsHelper->getValue($sql);
 
@@ -1204,7 +1210,7 @@ class BookingHelper {
                 $action_buttons .= $this->toolsHelper->buildButton($link, $label, false, 'sunset');
             }
 
-            if ($is_future_event) {
+            if ($is_future_event && $is_open) {
                 $select = $target . '&task=booking.selectUsers&event_id=' . $event_id;
                 $action_buttons .= $this->toolsHelper->buildButton($select, 'Select Users');
             }
@@ -1279,6 +1285,12 @@ class BookingHelper {
             $manageTarget = $target . '&view=managebooking&id=' . $booking->id . '&event_id=' . $event_id;
             $details .= $this->toolsHelper->buildButton($manageTarget, 'Manage My Booking', false, 'grey');
             $details .= '<br>';
+        } elseif (!$is_open) {
+            if ($event->event_state == 0) {
+                $details .= '<br>Bookings open once this event has been reviewed and published.<br>';
+            } else {
+                $details .= '<br>This event is not open for bookings.<br>';
+            }
         } elseif ($is_future_event && !$is_full) {
             if (($event->max_bookings - $confirmed_bookings - $provisional_bookings ) < 2) {
                 $details .= '<br><b>WARNING: <b> If you make a booking,and the existing provisional bookings are accepted, ';
@@ -1337,30 +1349,57 @@ class BookingHelper {
         }
     }
 
+    /**
+     * A booking's status as a coloured badge. Green means nothing more to do;
+     * amber/orange means someone needs to act (confirm a provisional booking,
+     * or collect payment); blue is the wait list; grey is cancelled.
+     * Inline styles, so it looks the same on the site, in the admin and in emails.
+     *
+     * @param   mixed    $state             Booking state (0, 1, -1, -2)
+     * @param   boolean  $is_paid           Whether the booking is marked as paid
+     * @param   boolean  $requires_payment  Whether the event requires payment
+     * @param   boolean  $plain             True for just the badge; false wraps it in
+     *                                      a paragraph with a "Status:" label
+     *
+     * @return  string
+     */
     public static function showState($state, $is_paid = false, $requires_payment = false, $plain = false) {
-        if ($state == '') {
+        if ($state === '' || is_null($state)) {
             return '';
         }
+        // background, text colour
+        $green = array('#2e7d32', '#ffffff');
         if ($state == 0) {
-            $colour = 'orange';
+            $colours = array('#ffc107', '#212529');   // amber
             $label = 'Provisional';
         } elseif ($state == 1) {
-            $colour = 'green';
-            $label = ($requires_payment && $is_paid) ? 'Confirmed (Paid)' : 'Confirmed';
+            if (!$requires_payment) {
+                $colours = $green;
+                $label = 'Confirmed';
+            } elseif ($is_paid) {
+                $colours = $green;
+                $label = 'Confirmed (Paid)';
+            } else {
+                $colours = array('#c45500', '#ffffff');   // orange
+                $label = 'Confirmed (Unpaid)';
+            }
         } elseif ($state == -2) {
-            $colour = 'red';
+            $colours = array('#6c757d', '#ffffff');   // grey
             $label = 'Cancelled';
         } elseif ($state == -1) {
-            $colour = 'steelblue';
+            $colours = array('#2f6c9f', '#ffffff');   // blue
             $label = 'Waitlisted';
         } else {
-            $colour = '';
-            $label = $state;
+            $colours = array('#e9ecef', '#212529');
+            $label = htmlspecialchars((string) $state);
         }
+        $badge = '<span style="display:inline-block; padding:2px 8px; border-radius:10px; ';
+        $badge .= 'font-weight:600; font-size:0.9em; white-space:nowrap; ';
+        $badge .= 'background:' . $colours[0] . '; color:' . $colours[1] . ';">' . $label . '</span>';
         if ($plain) {
-            return '<span style="color:' . $colour . '"><b>' . $label . '</b></span>';
+            return $badge;
         }
-        return '<p style="color:' . $colour . '"><b>Status: </b>' . $label . '</p>';
+        return '<p><b>Status: </b>' . $badge . '</p>';
     }
 
     private function statusDescription($count, $status) {

@@ -13,6 +13,7 @@
  * 26/01/19 CB use grid.sort for all columns in all.php for reliable sorting (searchtools.sort requires Search Tools bar)
  * NOTE: A lot of time was spent tracking down the sorting issue; the actual solution was to use grid.sort instead of searchtools.sort, as the latter requires the Search Tools bar to be present and active.
  * 05/02/16 CB correction for remote attachments
+ * 15/11/26 RH "Awaiting review" badge and Edit link after the title (view titleExtras())
 */
 // No direct access
 defined('_JEXEC') or die;
@@ -159,7 +160,7 @@ $target_display .= '&layout=' . $this->layout . '&id=';
                     //echo JRoute::_('index.php?option=com_ra_events&view=event&id=' . $item->id . '&Itemid=' . $this->menu_id) . '">';
                     echo Route::_($link) . '">';
                     echo $item->title;
-                    echo '</a></td>' . PHP_EOL;
+                    echo '</a>' . $this->titleExtras($item) . '</td>' . PHP_EOL;
                     echo '<td>' . $item->name . '</td>' . PHP_EOL;
                     echo '<td class="item-location">' . $item->location . '</td>';
                     echo '<td class="item-url">';
