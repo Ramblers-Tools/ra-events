@@ -1,10 +1,6 @@
 <?php
 
 /**
- * @version    2.5.0
- * @author     Charlie Bigley <webmaster@bigley.me.uk>
- * @copyright  2023 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 19/02/25 CB set up $this->user from getCurrentUser
  * 05/03/25 CB support for bookings
  * 23/03/25 CB simplify message
@@ -12,6 +8,7 @@
  * 26/07/25 CB save input parameters in user state
  * 07/04/26 CB showButton
  * 15/11/26 RH one ToolsHelper; "awaiting review" notice; $this->user in the edit check
+ * 16/11/26 CB replaced bookingReports with booking_reports.showMenu
  */
 
 namespace Ramblers\Component\Ra_events\Site\View\Event;
@@ -219,7 +216,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
             if ($tot_bookings > 0) {
                 $caption = 'Show Reports';
                 $target = 'index.php?option=com_ra_events&Itemid=' . $this->menu_id;
-                $target .= '&task=event.bookingReports&id=' . $this->item->id;
+                $target .= '&task=booking_reports.showMenu&id=' . $this->item->id;
                 $buttons .= $this->toolsHelper->buildButton($target, $caption, False, 'darkgreen');
             }
         }

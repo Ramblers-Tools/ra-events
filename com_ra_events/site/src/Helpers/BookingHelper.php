@@ -2,11 +2,6 @@
 
 /**
  * Contains functions used in the back end and the front end
- * @version    2.5.1
- * @package    com_ra_events
- * @author     Charlie Bigley <webmaster@bigley.me.uk>
- * @copyright  2023 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 06/03/25 CB created from MailMan
  * 06/08/25 CB accept additional parameter to bookingHelper->showBookings
  * 11/09/25 CB Allow SuperUsers to make additional bookings from the front end
@@ -24,7 +19,8 @@
  * 03/08/26 CB use ToolsHelper to encode token
  * 15/11/26 RH booking counts no longer require a published event; no new bookings on one awaiting review
  * 15/11/26 RH showState(): coloured badges, "Confirmed (Unpaid)" when payment is due; getOwnedBooking returns is_paid/requires_payment
- */
+ *  16/11/26 CB change extract to CSV download
+*/
 
 namespace Ramblers\Component\Ra_events\Site\Helpers;
 
@@ -545,85 +541,97 @@ class BookingHelper {
         return strrev($token) . 'E';
     }
 
-    public function extractBookings($event_id, $table = 'N') {
+    public function extractBookings($event_id, $includeIce = null): string {
+        $event_id = (int) $event_id;
         $sql = 'SELECT booking1, booking2, requires_ice FROM #__ra_events WHERE id=' . $event_id;
         $event = $this->toolsHelper->getItem($sql);
+        if (!$event) {
+            throw new \RuntimeException('Event not found.');
+        }
 
-        $sql = 'SELECT b.id, b.user_id, b.partner,b.custom1, b.custom2, p.home_group, u.name, u.email ';
+        $showIce = (bool) $event->requires_ice && ($includeIce === null
+            ? $this->canDo->get('core.edit')
+            : (bool) $includeIce);
+        $hasBooking1 = isset($event->booking1) && $event->booking1 !== '';
+        $hasBooking2 = isset($event->booking2) && $event->booking2 !== '';
+
+        $sql = 'SELECT b.id, b.user_id, b.partner, b.custom1, b.custom2, b.special_request, ';
+        $sql .= 'b.state, b.created, b.amount_paid, p.home_group, p.preferred_name, g.name AS group_name, ';
+        $sql .= 'i.contact_name AS ice_contact, i.relationship AS ice_relationship, i.phone AS ice_phone ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id ';
-        $sql .= 'INNER JOIN #__users AS u ON u.id = b.user_id  ';
+        $sql .= 'INNER JOIN #__users AS u ON u.id = b.user_id ';
+        $sql .= 'LEFT JOIN #__ra_groups AS g ON g.code = p.home_group ';
         $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id ';
-        $sql .= 'WHERE b.event_id=' . $event_id;
-        $sql .= ' ORDER BY e.group_code,u.name';
+        $sql .= 'LEFT JOIN #__ra_ice_contacts AS i ON i.user_id = b.user_id ';
+        $sql .= 'WHERE b.event_id=' . $event_id . ' AND b.state IN (0, 1, -1) ';
+        $sql .= 'ORDER BY b.state DESC, p.preferred_name, g.name';
         $rows = $this->toolsHelper->getRows($sql);
         $guestsByBooking = $this->guestNamesForEvent($event_id);
-        // Emergency contacts go to whoever may edit the event, same rule as the reports
-        $showIce = ($event->requires_ice == 1) && $this->canDo->get('core.edit');
-        $iceByUser = array();
-        if ($showIce) {
-            $iceHelper = new IceHelper;
-            $iceByUser = $iceHelper->getForEvent($event_id);
+
+        $headers = ['Status', 'Name', 'Group', 'Booked', 'Paid', 'Guests'];
+        if ($hasBooking1) {
+            $headers[] = $event->booking1;
         }
-        $title = 'Group,Name,Email,Extra,Special';
-        if ($event->booking1 !== '') {
-            $title .= ',' . $event->booking1;
-        }
-        if ($event->booking2 !== '') {
-            $title .= ',' . $event->booking2;
+        if ($hasBooking2) {
+            $headers[] = $event->booking2;
         }
         if ($showIce) {
-            $title .= ',ICE contact,Relationship,ICE phone';
+            $headers[] = 'ICE contact';
+            $headers[] = 'Relationship';
+            $headers[] = 'ICE phone';
         }
-        if ($table == 'Y') {
-            $toolsTable = new ToolsTable();
-            $toolsTable->add_header($title);
-            foreach ($rows as $row) {
-                $guests = isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner;
-                $toolsTable->add_item($row->home_group);
-                $toolsTable->add_item($row->name);
-                $toolsTable->add_item($row->email);
-                $toolsTable->add_item($guests);
-                $toolsTable->add_item($row->special_request);
-                if ($event->booking1 !== '') {
-                    $toolsTable->add_item($row->custom1);
+        $headers[] = 'Special requests';
+
+        $csv = fopen('php://temp', 'r+');
+        if ($csv === false) {
+            throw new \RuntimeException('Unable to create the bookings CSV.');
+        }
+
+        try {
+            if (fputcsv($csv, $headers, ',', '"', '', "\r\n") === false) {
+                throw new \RuntimeException('Unable to write the bookings CSV header.');
+            }
+
+            foreach ((array) $rows as $row) {
+                $status = [0 => 'Provisional', 1 => 'Confirmed', -1 => 'Waitlisted'][(int) $row->state] ?? 'Unknown';
+                $guests = $guestsByBooking[$row->id] ?? [];
+                $fields = [
+                    $status,
+                    $row->preferred_name,
+                    $row->group_name,
+                    $row->created,
+                    $row->amount_paid,
+                    $guests ? implode(', ', $guests) : $row->partner,
+                ];
+
+                if ($hasBooking1) {
+                    $fields[] = $row->custom1;
                 }
-                if ($event->booking2 !== '') {
-                    $toolsTable->add_item($row->custom2);
+                if ($hasBooking2) {
+                    $fields[] = $row->custom2;
                 }
                 if ($showIce) {
-                    $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
-                    $toolsTable->add_item(is_null($ice) ? '<i>Not supplied</i>' : htmlspecialchars($ice->contact_name));
-                    $toolsTable->add_item(is_null($ice) ? '' : htmlspecialchars($ice->relationship));
-                    $toolsTable->add_item(is_null($ice) ? '' : htmlspecialchars($ice->phone));
+                    $fields[] = $row->ice_contact;
+                    $fields[] = $row->ice_relationship;
+                    $fields[] = $row->ice_phone;
                 }
-                $toolsTable->generate_line();
+                $fields[] = $row->special_request;
+
+                if (fputcsv($csv, $fields, ',', '"', '', "\r\n") === false) {
+                    throw new \RuntimeException('Unable to write a bookings CSV row.');
+                }
             }
-            $toolsTable->generate_table();
-        } else {
-            echo $title . '<br>';
-            foreach ($rows as $row) {
-                $guests = isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner;
-                echo $row->home_group . ',';
-                echo $row->name . ',';
-                echo $row->email . ',';
-                echo $guests;
-                if ($event->booking1 !== '') {
-//$table->add_item($row->custom1);
-                    echo ',' . $row->custom1;
-                }
-                if ($event->booking2 !== '') {
-//$table->add_item($row->custom2);
-                    echo ',' . $row->custom2;
-                }
-                if ($showIce) {
-                    $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
-                    echo ',' . (is_null($ice) ? 'Not supplied' : $ice->contact_name);
-                    echo ',' . (is_null($ice) ? '' : $ice->relationship);
-                    echo ',' . (is_null($ice) ? '' : $ice->phone);
-                }
-                echo '<br>';
+
+            rewind($csv);
+            $csvData = stream_get_contents($csv);
+            if ($csvData === false) {
+                throw new \RuntimeException('Unable to read the generated bookings CSV.');
             }
+
+            return $csvData;
+        } finally {
+            fclose($csv);
         }
     }
 

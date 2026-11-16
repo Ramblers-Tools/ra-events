@@ -1,14 +1,10 @@
 <?php
 
 /**
- * @version    2.2.4
- * @package    com_ra_events
- * @author     Charlie Bigley <charlie@bigley.me.uk>
- * @copyright  2025 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 21/07/25 CB show all bookings
  * 15/09/25 CB remove diagnostic display
- * 22/09/25 CB defaut sequence to id DESC
+ * 22/09/25 CB default sequence to id DESC
+ * 03/08/26 CB add amount_paid to filter fields
  */
 
 namespace Ramblers\Component\Ra_events\Administrator\Model;
@@ -51,7 +47,8 @@ class BookingsModel extends ListModel {
                 'e.title',
                 'p.preferred_name',
                 'a.num_places',
-                'a.partner',
+                'a.amount_paid',
+                'a.is_paid', 'a.is_paid',
                 'id', 'a.id',
             );
         }

@@ -1,10 +1,5 @@
 <?php
 /**
- * @version    2.5.0
- * @component  com_ra_events
- * @author     Charlie Bigley <webmaster@bigley.me.uk>
- * @copyright  2023 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 02/12/24 change description to title, comment out display of this->header
  * 29/03/25 CB max_bookings
  * 09/06/25 CB remove hidden field state, show selection list
@@ -16,6 +11,7 @@
  * 22/09/25 CB add custom fields
  * 05/11/25 CB don't show link for bookings
  * 03/04/26 CB new tab to show Mailshots
+ * 16/11/26 CB removed bookingHelper->showBookingsAdmin (left edit without preserving changes)
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -177,8 +173,6 @@ if ($api_site_id > 0) {
                 echo '<h4>Booking information</h4>';
                 echo $this->form->getvalue('booking_info');
             }
-            //echo $bookingHelper->showBookings($this->item->bookable, $this->item->id, '', False);
-            echo $bookingHelper->showBookingsAdmin($this->item->bookable, $this->item->id);
             echo '</fieldset>';
             echo '</div>';
             echo '</div>';

@@ -1,7 +1,6 @@
 <?php
 
 /**
-\\
  * 21/03/25 CB display proper message on success
  * 30/06/25 CB extractBookings
  * 12/10/25 CB bookingReports
@@ -12,6 +11,8 @@
  * 02/03/26 CB use preferred_name in reports, not name
  * 17/06/26 CB include booked date in the CSV output
  * 09/11/26 CB Allow callback to booking reports
+ * 16/11/26 CB replaced bookingReports with booking_reports.showMenu, change extract to CSV 
+ */
  */
 
 namespace Ramblers\Component\Ra_events\Site\Controller;
@@ -54,241 +55,6 @@ class EventController extends BaseController {
     }
 
     /**
-     * Quote one value for the hand-built CSV in bookingReports(). Emergency
-     * contact fields are free text and routinely contain commas.
-     *
-     * @param   string  $value
-     * @return  string
-     */
-    private function csvField($value) {
-        $value = (string) $value;
-        if (strpbrk($value, ",\"\r\n") === false) {
-            return $value;
-        }
-        return '"' . str_replace('"', '""', $value) . '"';
-    }
-
-    public function bookingReports() {
-        $event_id = $this->app->input->getInt('id', '0');
-        // Redirect to the new menu
-        $this->setRedirect(Route::_('index.php?option=com_ra_events&task=booking_reports.showMenu&id=' . $event_id, false));
-        return;                // <<<<<<<<<<,
-
-
-
-        $sort = $this->app->input->getCmd('sort', 'name');
-        $mode = $this->app->input->getWord('mode', 'preview');
-        $menu_id = $this->app->input->getInt('Itemid', '0');
-
-        $sql = 'SELECT e.event_type_id, e.event_date, e.event_date_end, e.title, e.contact_id, ';
-        $sql .= 't.description AS `event_type`, e.booking1, e.booking2, e.requires_ice ';
-        $sql .= 'FROM #__ra_events AS e ';
-        $sql .= 'INNER JOIN #__ra_event_types AS t ON t.id = e.event_type_id ';
-        $sql .= 'WHERE e.id=' . $event_id;
-        $event = $this->toolsHelper->getItem($sql);
-
-        // Only the event's own organiser (or a user with core.edit) may see who's
-        // booked on an event and their contact details.
-        $canDo = ContentHelper::getActions('com_ra_events');
-        $eventsHelper = new EventsHelper;
-        $ownContact = $eventsHelper->lookupContactid();
-        $canViewReport = $canDo->get('core.edit') || (!is_null($event) && !is_null($ownContact) && $ownContact == $event->contact_id);
-        if (!$canViewReport) {
-            throw new \Exception('This report is only available to the event organiser', 403);
-        }
-
-//echo 'mode is ' . $mode . '<br>';
-        $self = 'index.php?option=com_ra_events';
-        $self .= '&Itemid=' . $menu_id;
-        $self .= '&task=event.bookingReports&id=' . $event_id;
-
-        $sql = 'SELECT b.*, ';
-        $sql .= 'g.name AS `group_name`, p.preferred_name, u.name, u.email ';
-        $sql .= 'FROM #__ra_bookings AS b ';
-        $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id  ';
-        $sql .= 'INNER JOIN #__users AS u ON u.id = b.user_id  ';
-        $sql .= 'LEFT JOIN #__ra_groups AS g ON g.code = p.home_group  ';
-        $sql .= 'INNER JOIN #__ra_events AS e ON e.id = b.event_id  ';
-        $sql .= 'WHERE b.event_id=' . $event_id;
-        $sql .= ' AND b.state in (0,1)';
-        if ($sort == 'name') {
-            $sql .= ' ORDER BY p.preferred_name, g.name';
-        } elseif ($sort == 'booking1') {
-            $sql .= ' ORDER BY custom1, g.name, p.preferred_name';
-        } elseif ($sort == 'booking2') {
-            $sql .= ' ORDER BY custom2, g.name, p.preferred_name';
-        } else {
-            $sql .= ' ORDER BY g.name,p.preferred_name';
-        }
-//        echo $sql . '<br>';
-        $rows = $this->toolsHelper->getRows($sql);
-        $bookingHelper = new BookingHelper;
-        $guestsByBooking = $bookingHelper->guestNamesForEvent($event_id);
-        $requiresIce = ($event->requires_ice == 1);
-        $iceByUser = array();
-        if ($requiresIce) {
-            $iceHelper = new IceHelper;
-            $iceByUser = $iceHelper->getForEvent($event_id);
-        }
-
-        // Build column headings based on sort order and presence of custom fields
-        $column_headings = '';
-        if ($sort == 'name') {
-            $column_headings = 'Name,Group';
-        } else {
-            $column_headings = 'Group,Name';
-        }
-        // One heading per add_item() below: created, email, guests. A stray extra
-        // comma here shifts every later column left by one.
-        $column_headings .= ',Booked, Email, Extra';
-        if ($event->booking1 !== '') {
-            $column_headings .= ', ' . $event->booking1;
-        }
-        if ($event->booking2 !== '') {
-            $column_headings .= ', ' . $event->booking2;
-        }
-        if ($requiresIce) {
-            $column_headings .= ', ICE contact, Relationship, ICE phone';
-        }
-
-        // If CSV download requested, output headers and exit
-        if ($mode === 'csv') {
-            // Generate CSV data
-            $csvData = $column_headings . ",Special requests\n";
-            foreach ($rows as $row) {
-                if ($sort == 'name') {
-                    $csvData .= $row->preferred_name . ', ';
-                    $csvData .= $row->group_name . ', ';
-                } else {
-                    $csvData .= $row->group_name . ', ';
-                    $csvData .= $row->preferred_name . ', ';
-                }
-                $csvData .= $row->created . ', ';
-                $csvData .= $row->email . ', ';
-                $csvData .= isset($guestsByBooking[$row->id]) ? implode(' / ', $guestsByBooking[$row->id]) : $row->partner;
-                if ($event->booking1 !== '') {
-                    $csvData .= ', ' . $row->custom1;
-                }
-                if ($event->booking2 !== '') {
-                    $csvData .= ', ' . $row->custom2;
-                }
-                if ($requiresIce) {
-                    $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
-                    $csvData .= ', ' . $this->csvField(is_null($ice) ? 'Not supplied' : $ice->contact_name);
-                    $csvData .= ', ' . $this->csvField(is_null($ice) ? '' : $ice->relationship);
-                    $csvData .= ', ' . $this->csvField(is_null($ice) ? '' : $ice->phone);
-                }
-                $csvData .= ', ';
-                if (str_contains($row->special_request, ',')) {
-                    $csvData .= '"' . $row->special_request . '"';
-                } else {
-                    $csvData .= $row->special_request;
-                }
-                $csvData .= "\n";
-            }
-
-            header('Content-Type: text/csv; charset=utf-8');
-            header('Content-Disposition: attachment; filename="bookings_' . date('Y-m-d') . '.csv"');
-            echo $csvData;
-            exit;
-        }
-        echo '<h2>Booking Reports</h2>';
-// echo '2 mode is ' . $mode . '<br>';
-        // Display HTML view (preview or alpha mode)
-        // showPrint() needs this page's own URL - it appends &tmpl=component&print=1 to it,
-        // so keep the current mode/sort and the print-out matches what's on screen.
-        $print_target = $self . '&mode=' . $mode . '&sort=' . $sort;
-        echo $this->toolsHelper->showPrint($print_target);
-        $label = 'Download as CSV';
-        $target = $self . '&sort=' . $sort . '&mode=csv';
-        echo $this->toolsHelper->buildButton($target, $label, false, 'darkgreen');
-
-        if ($mode !== 'alpha') {
-            if ($sort == 'name') {
-                $label = 'Sort by Group';
-                $target = $self . '&mode=' . $mode . '&sort=group';
-                echo $this->toolsHelper->buildButton($target, $label, false, 'darkgreen');
-            } else {
-                $label = 'Sort by Name';
-                $target = $self . '&mode=' . $mode . '&sort=name';
-                echo $this->toolsHelper->buildButton($target, $label, false, 'darkgreen');
-            }
-            if (($event->booking1 !== '') AND ($sort !== 'booking1')) {
-                $label = 'Sort by ' . $event->booking1;
-                $target = $self . '&mode=' . $mode . '&sort=booking1';
-                echo $this->toolsHelper->buildButton($target, $label, false, 'darkgreen');
-            }
-            if (($event->booking2 !== '') AND ($sort !== 'booking2')) {
-                $label = 'Sort by ' . $event->booking2;
-                $target = $self . '&mode=' . $mode . '&sort=booking2';
-                echo $this->toolsHelper->buildButton($target, $label, false, 'darkgreen');
-            }
-            $label = 'List all by name';
-            $target = $self . '&mode=alpha';
-            echo $this->toolsHelper->buildButton($target, $label, false, 'darkgreen');
-        }
-
-        echo '<h3>' . $event->event_type . '</h3>';
-        if ($event->event_type_id == 4) {  // Holiday
-            echo '<h2>' . HTMLHelper::_('date', $event->event_date, 'd-M-y') . ' to ';
-            echo HTMLHelper::_('date', $event->event_date_end, 'd-M-y');
-        } else {
-            echo '<h2>' . HTMLHelper::_('date', $event->event_date, 'l d M y');
-        }
-        echo ' <b>' . $event->title . '</b></h2>';
-
-        if ($mode == 'preview') {
-            $toolsTable = new ToolsTable();
-            $toolsTable->add_header($column_headings . ",Special requests");
-            foreach ($rows as $row) {
-                if ($sort == 'name') {
-                    $toolsTable->add_item($row->preferred_name);
-                    $toolsTable->add_item($row->group_name);
-                } else {
-                    $toolsTable->add_item($row->group_name);
-                    $toolsTable->add_item($row->preferred_name);
-                }
-                $toolsTable->add_item($row->created);
-                $toolsTable->add_item($row->email);
-                $toolsTable->add_item(isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner);
-                if ($event->booking1 !== '') {
-                    $toolsTable->add_item($row->custom1);
-                }
-                if ($event->booking2 !== '') {
-                    $toolsTable->add_item($row->custom2);
-                }
-                if ($requiresIce) {
-                    $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
-                    $toolsTable->add_item(is_null($ice) ? '<i>Not supplied</i>' : htmlspecialchars($ice->contact_name));
-                    $toolsTable->add_item(is_null($ice) ? '' : htmlspecialchars($ice->relationship));
-                    $toolsTable->add_item(is_null($ice) ? '' : htmlspecialchars($ice->phone));
-                }
-                $toolsTable->add_item($row->special_request);
-                $toolsTable->generate_line();
-            }
-            $toolsTable->generate_table();
-        } elseif ($mode == 'alpha') {
-            $names = [];
-            foreach ($rows as $row) {
-                $names[] = $row->preferred_name;
-                if (!empty($guestsByBooking[$row->id])) {
-                    $names = array_merge($names, $guestsByBooking[$row->id]);
-                } elseif ($row->num_places == 2) {
-                    $names[] = $row->partner;
-                }
-            }
-            sort($names);
-            foreach ($names as $name) {
-                echo $name . '<br>';
-            }
-        }
-
-        $back = 'index.php?option=com_ra_events&view=event&id=' . $event_id;
-        $back .= '&Itemid=' . $menu_id;
-        echo $this->toolsHelper->backButton($back);
-    }
-
-    /**
      * Method to check out an item for editing and redirect to the edit form.
      *
      * @return  void
@@ -323,18 +89,19 @@ class EventController extends BaseController {
     }
 
     public function extractBookings() {
-        echo '<h2>Extract Bookings</h2>';
-        echo '<h4>You can copy this report and paste it into a CSV file, then add extra columns as required</h4>';
         $event_id = $this->app->input->getInt('id', '0');
-        $label = 'Extract details';
-        $link = 'index.php?option=com_ra_events&Itemid=' . $this->menu_id;
-        $link .= '&task=event.extractBookings&id=' . $event_id;
-        $details .= $this->toolsHelper->buildButton($link, $label, True, 'darkgreen');
-
         $bookingHelper = new BookingHelper;
-        $bookingHelper->extractBookings($event_id);
-//        $back = 'index.php?option = com_ra_events&view = events';
-//        echo $this->toolsHelper->backButton($back);
+        $csvData = $bookingHelper->extractBookings($event_id);
+
+        $this->app->setHeader('Content-Type', 'text/csv; charset=utf-8', true);
+        $this->app->setHeader(
+            'Content-Disposition',
+            'attachment; filename="bookings_' . date('Y-m-d_H-i-s') . '.csv"',
+            true
+        );
+        $this->app->sendHeaders();
+        echo $csvData;
+        $this->app->close();
     }
 
     /**

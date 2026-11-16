@@ -1,11 +1,7 @@
 <?php
 /**
- * @version    2.5.1
- * @package    com_ra_events
- * @author     Charlie Bigley <charlie@bigley.me.uk>
- * @copyright  2025 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 03/08/26 CB correct css
+ * 16/11/26 CB added amount_paid column to bookings table display
  */
 // No direct access
 defined('_JEXEC') or die;
@@ -61,6 +57,7 @@ $listDirn = $this->state->get('list.direction');
                             <th class='left'>
                                 <?php echo HTMLHelper::_('searchtools.sort', 'User', 'p.preferred_name', $listDirn, $listOrder); ?>
                             </th>
+
                             <th class='left'>
                                 <?php echo HTMLHelper::_('searchtools.sort', 'Number', 'a.num_places', $listDirn, $listOrder); ?>
                             </th>
@@ -70,6 +67,9 @@ $listDirn = $this->state->get('list.direction');
 
                             <th  scope="col" class="w-1 text-center">
                                 <?php echo HTMLHelper::_('searchtools.sort', 'JSTATUS', 'a.state', $listDirn, $listOrder); ?>
+                            </th>
+                            <th class='left'>
+                                <?php echo HTMLHelper::_('searchtools.sort', 'AmountPaid', 'a.amount_paid', $listDirn, $listOrder); ?>
                             </th>
                             <th  scope="col" class="w-1 text-center">
                                 <?php echo HTMLHelper::_('searchtools.sort', 'Paid', 'a.is_paid', $listDirn, $listOrder); ?>
@@ -130,7 +130,9 @@ $listDirn = $this->state->get('list.direction');
                                 <td class="text-center">
                                     <?php echo HTMLHelper::_('jgrid.published', $item->state, $i, 'bookings.', $canChange, 'cb'); ?>
                                 </td>
-
+                                <td>
+                                    <?php echo $item->amount_paid; ?>
+                                </td>
                                 <td class="text-center">
                                     <?php if ($item->state == 1 && $item->event_requires_payment && $canManagePayments) : ?>
                                         <?php if ($item->is_paid) : ?>
