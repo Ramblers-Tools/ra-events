@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<form addfieldprefix="Ramblers\Component\Ra_tools\Administrator\Field">
-  <fieldset addruleprefix="Ramblers\Component\Ra_tools\Administrator\Rule">
+<form addfieldprefix="Ramblers\Component\Ra_tools\Site\Field">
+  <fieldset addruleprefix="Ramblers\Component\Ra_tools\Site\Rule">
     <field name="id" 
            type="text" 
            label="ID"
@@ -52,8 +52,9 @@
            hint="HH:MM"/>
     <field
         name="contact_id"
-        type="Contact"
+        type="racontact"
         label="Contact"
+        required="true"  
         description="Contact name"
     /> 
     <field name="title" size="50" maxlength="50" filter="safehtml" type="text" 

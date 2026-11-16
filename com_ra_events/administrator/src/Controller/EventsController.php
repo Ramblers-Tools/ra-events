@@ -1,11 +1,6 @@
 <?php
 
 /**
- * @version    2.3.5
- * @component  com_ra_events
- * @author     Charlie Bigley <webmaster@bigley.me.uk>
- * @copyright  2023 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 29/03/25 CB showBookings and extractBookings
  * 09/04/25 CB publish/Unpublish
  * 08/05/25 CB header for extract
@@ -13,6 +8,7 @@
  * 04/08/25 CB functions delete & publish copied from Emails
  * 05/10/25 CB show home group
  * 23/10/25 CB implement delete
+ * 16/11/26 CB add amount_paid to showBookings, change extract to CSV download
  */
 
 namespace Ramblers\Component\Ra_events\Administrator\Controller;
@@ -118,15 +114,20 @@ class EventsController extends AdminController {
     }
 
     public function extractBookings() {
-        ToolBarHelper::title('Extract Bookings');
         $event_id = $this->app->input->getInt('id', '0');
-        $table = $this->app->input->getInt('table', 'N');
-        echo '<h4>You can copy this report and paste it into a CSV file, then add extra columns etc</h4>';
-        echo '<h4>You could save this file, edit as required and import into a different Event</h4>';
         $bookingHelper = new BookingHelper;
-        $bookingHelper->extractBookings($event_id, $table);
-        $back = 'administrator/index.php?option=com_ra_events&view=events';
-        echo $this->toolsHelper->backButton($back);
+        $csvData = $bookingHelper->extractBookings($event_id);
+
+        $app = Factory::getApplication();
+        $app->setHeader('Content-Type', 'text/csv; charset=utf-8', true);
+        $app->setHeader(
+            'Content-Disposition',
+            'attachment; filename="bookings_' . date('Y-m-d_H-i-s') . '.csv"',
+            true
+        );
+        $app->sendHeaders();
+        echo $csvData;
+        $app->close();
     }
 
     /**
@@ -188,13 +189,13 @@ class EventsController extends AdminController {
         $total_bookings = 0;
         $confirmed_bookings = 0;
         $total_places = 0;
-        $header = 'Name,Group,Status,Booked,Places,Other';
+        $header = 'Name,Group,Status,Booked,Paid,Places,Other';
         if ($showIce) {
             $header .= ',ICE contact,Relationship,ICE phone';
         }
         $table->add_header($header);
 
-        $sql = 'SELECT b.id, b.user_id, b.event_id, b.state, b.is_paid, b.created, b.num_places, b.partner, ';
+        $sql = 'SELECT b.id, b.user_id, b.event_id, b.state, b.is_paid, b.created, b.num_places, b.partner, b.amount_paid, ';
         $sql .= 'p.preferred_name, p.home_group, s.title ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id  ';
@@ -217,6 +218,7 @@ class EventsController extends AdminController {
             $table->add_item($row->home_group);
             $table->add_item(BookingHelper::showState($row->state, $row->is_paid, $event->requires_payment));
             $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
+            $table->add_item($row->amount_paid);
             $table->add_item($row->num_places);
             $table->add_item(isset($guestsByBooking[$row->id]) ? implode(', ', $guestsByBooking[$row->id]) : $row->partner);
             if ($showIce) {

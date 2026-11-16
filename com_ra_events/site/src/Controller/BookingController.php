@@ -1,11 +1,6 @@
 <?php
 
 /**
- * @version    2.5.1
- * @package    com_ra_events
- * @author     Charlie Bigley <webmaster@bigley.me.uk>
- * @copyright  2023 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 05/03/25 CB Created
  * 03/05/25 CB show counts
  * 26/07/25 CB add callback when editing
@@ -22,6 +17,7 @@
  * 02/03/26 CB Commented out call to bookingHelper->createBooking
  * 16/06/26 CB correction for showBookings
  * 03/08/26 CB use ToolsHelper to decode token
+ * 16/11/26 CB added amount_paid to booking table display
  */
 
 namespace Ramblers\Component\Ra_events\Site\Controller;
@@ -417,7 +413,8 @@ class BookingController extends FormController {
             $this->setRedirect('index.php');
             $this->redirect();
             return;
-        }
+        }        
+                
         $event_id = $this->app->input->getInt('event_id', '0');
         $menu_id = $this->app->input->getInt('Itemid', '0');
         $print = $this->app->input->getWord('print', 'N');
@@ -463,7 +460,7 @@ class BookingController extends FormController {
         if ($item->booking2 !== '') {
             $header .= ',' . $item->booking2;
         }
-        $header .= ', Booked';
+        $header .= ', Booked,Paid';
         // Emergency contacts are only for the organiser - this page is visible to any
         // logged-in member, so the event flag alone is not enough to gate them.
         $showIce = ($item->requires_ice == 1) && $canEdit;
@@ -475,7 +472,7 @@ class BookingController extends FormController {
         }
         $table->add_header($header);
 
-        $sql = 'SELECT b.*, ';
+        $sql = 'SELECT DISTINCT b.*, ';
         $sql .= 'p.preferred_name, s.title ';
         $sql .= 'FROM #__ra_bookings AS b ';
         $sql .= 'INNER JOIN #__ra_profiles AS p ON p.id = b.user_id  ';
@@ -569,6 +566,7 @@ class BookingController extends FormController {
             }
 
             $table->add_item(HTMLHelper::_('date', $row->created, 'd M y H:i'));
+             $table->add_item($row->amount_paid);
             if ($showIce) {
                 $ice = isset($iceByUser[$row->user_id]) ? $iceByUser[$row->user_id] : null;
                 if (is_null($ice)) {

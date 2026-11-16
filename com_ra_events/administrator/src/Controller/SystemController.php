@@ -229,38 +229,4 @@ class SystemController extends FormController {
 //$this->showBookings(1,1,true);
     }
 
-    // localhost/administrator/index.php?option=com_ra_events&task=system.checkUserLinks&id=979
-    // Alie Hagendoorn
-    private function checkUserlinks($id) {
-        // Checks that records exist in
-        //  Links User to given group
-        $db = Factory::getDbo();
-        $helper = New ToolsHelper;
-
-        for ($i = 1; $i < 3; $i++) {
-            $sql = 'SELECT COUNT(user_id) FROM #__user_usergroup_map WHERE user_id=' . $id . ' AND group_id=' . $i;
-            $record_count = $helper->getValue($sql);
-            if ($record_count == 0) {
-                $query = $db->getQuery(true);
-                $query
-                        ->insert($db->quoteName('#__user_usergroup_map'))
-                        ->set('user_id =' . $db->quote($id))
-                        ->set('group_id=' . $db->quote($i));
-                $db->setQuery($query);
-                $return = $db->execute();
-
-                if ($return == false) {
-                    $this->error = 'Unable to link ' . $this->user_id . ' to ' . $group_id;
-                    Factory::getApplication()->enqueueMessage('Unable to link user ' . $group_id, 'Warning');
-                }
-            }
-        }
-        return $return;
-    }
-
-    public function testUserlinks() {
-        $id = $this->app->input->getInt('id', '0');
-        $this->checkUserlinks($id);
-    }
-
 }

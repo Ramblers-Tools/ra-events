@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS `#__ra_ice_contacts` (
+`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+`user_id` INT UNSIGNED NOT NULL ,
+`contact_name` VARCHAR(100)  NOT NULL ,
+`relationship` VARCHAR(50)  NOT NULL ,
+`phone` VARCHAR(50)  NOT NULL ,
+`created` DATETIME NULL  DEFAULT NULL ,
+`created_by` INT(11)  NULL  DEFAULT 0,
+`modified` DATETIME NULL DEFAULT NULL ,
+`modified_by` INT(11)  NULL DEFAULT 0,
+`expiry_date` DATETIME NULL DEFAULT NULL ,
+PRIMARY KEY (`id`)
+) DEFAULT COLLATE=utf8mb4_unicode_ci; 

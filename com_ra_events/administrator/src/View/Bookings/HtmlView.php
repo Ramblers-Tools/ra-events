@@ -1,22 +1,18 @@
 <?php
 
 /**
- * @version    2.2,1
- * @package    com_ra_events
- * @author     Charlie Bigley <charlie@bigley.me.uk>
- * @copyright  2025 Charlie Bigley
- * @license    GNU General Public License version 2 or later; see LICENSE.txt
  * 20/03/25 CB Return to Dashboard
  * 14/08/25 CB reinstate delete
  * 10/09/25 CB Help
  * 03/08/26 CB change "Cancel" to "Delete"
+ * 16/11/26 CB hide menu sidebar
  */
 
 namespace Ramblers\Component\Ra_events\Administrator\View\Bookings;
 
 // No direct access
 defined('_JEXEC') or die;
-
+use \Joomla\CMS\Factory;
 use \Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use \Joomla\CMS\Toolbar\Toolbar;
 use \Joomla\CMS\Toolbar\ToolbarHelper;
@@ -72,6 +68,8 @@ class HtmlView extends BaseHtmlView {
      * @since   2.0
      */
     protected function addToolbar() {
+        // Suppress menu side panel
+        Factory::getApplication()->input->set('hidemainmenu', true);        
         $state = $this->get('State');
         $canDo = ToolsHelper::getActions();
 
