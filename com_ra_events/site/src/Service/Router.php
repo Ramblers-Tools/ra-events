@@ -116,6 +116,29 @@ class Router extends RouterView {
     }
 
     /**
+     * Keep the list an event was opened from. Joomla otherwise files every event under the first events menu item
+     * (e.g. a coach trip under Weekends Away), and its Back link then goes to the wrong list.
+     *
+     * @param   array  $query  An associative array of URL arguments
+     *
+     * @return  array  The URL arguments to use to assemble the subsequent URL.
+     */
+    public function preprocess($query) {
+        $keep = 0;
+        if (isset($query['Itemid']) && ($query['view'] ?? '') === 'event') {
+            $item = $this->menu->getItem($query['Itemid']);
+            if ($item && $item->component === 'com_ra_events' && ($item->query['view'] ?? '') === 'events') {
+                $keep = (int) $query['Itemid'];
+            }
+        }
+        $query = parent::preprocess($query);
+        if ($keep) {
+            $query['Itemid'] = $keep;
+        }
+        return $query;
+    }
+
+    /**
      * Leave out query values the menu item already holds (event_type_id), so a menu item's address has no query string
      *
      * @param   array  &$query  The vars that should be converted
