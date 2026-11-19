@@ -50,6 +50,7 @@
     15/11/26 RH version 2.16.2 - Select Users: a waitlisted user showed the previous row's button (e.g. "Add to wait list") because state -1 had no case; now shows "Remove from wait list", as Show Bookings offers. Confirm there now returns to the same event's list
     15/11/26 RH version 2.16.3 - booking status shown as coloured badges everywhere (Show Bookings, event page, member's bookings, Manage My Booking, Select Users, admin, confirmation email): Provisional amber, Confirmed green, Confirmed (Unpaid) orange when the event needs payment, Confirmed (Paid) green, Waitlisted blue, Cancelled grey
     15/11/26 RH version 2.17.0 - app events feed: contact_url, the website form that emails the event contact
+    19/11/26 RH version 2.19.0 - search-friendly addresses: event pages are /menu/35-event-title.html (old number-only addresses redirect with a 301), menu items no longer add ?event_type_id=, the Back link is a routed address, event pages have a canonical link (the menu item for the event type, else the Diary), Email the organiser links are rel="nofollow"; an event keeps the list it was opened from (a coach trip was filed under Weekends Away and Back went there)
 -->
 <extension type="component" version="4.0" method="upgrade">
     <name>RA Events</name>
@@ -60,7 +61,7 @@
     <author>Charlie Bigley</author>
     <authorEmail>webmaster@bigley.me.uk</authorEmail>
     <authorUrl>https://docs.stokeandnewcastleramblers.org.uk</authorUrl>
-    <version>2.18.0</version>
+    <version>2.19.0</version>
     <description>Support for Events and Bookings</description>
     <namespace path="src">Ramblers\Component\Ra_events</namespace>   
     <scriptfile>script.php</scriptfile>	

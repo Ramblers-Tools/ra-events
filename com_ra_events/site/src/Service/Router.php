@@ -25,6 +25,7 @@ use Joomla\CMS\Categories\CategoryFactoryInterface;
 use Joomla\CMS\Categories\CategoryInterface;
 use Joomla\Database\DatabaseInterface;
 use Joomla\CMS\Menu\AbstractMenu;
+use Joomla\CMS\Filter\OutputFilter;
 
 /**
  * Class Ra_eventsRouter
@@ -52,10 +53,23 @@ class Router extends RouterView {
      */
     private $categoryCache = [];
 
+    /**
+     * Event titles by id, for the address of an event page
+     *
+     * @var    array|null
+     */
+    private $titles = null;
+
+    /**
+     * @var    DatabaseInterface
+     */
+    private $db;
+
     public function __construct(SiteApplication $app, AbstractMenu $menu, CategoryFactoryInterface $categoryFactory, DatabaseInterface $db) {
         $params = Factory::getApplication()->getParams('com_ra_events');
         $this->noIDs = (bool) $params->get('sef_ids');
         $this->categoryFactory = $categoryFactory;
+        $this->db = $db;
 
         $events = new RouterViewConfiguration('events');
         $this->registerView($events);
@@ -84,7 +98,63 @@ class Router extends RouterView {
      * @return  array|string  The segments of this item
      */
     public function getEventSegment($id, $query) {
-        return array((int) $id => $id);
+        $id = (int) $id;
+        if ($this->titles === null) {
+            $this->titles = [];
+            try {
+                $q = $this->db->getQuery(true)
+                    ->select($this->db->quoteName(['id', 'title']))
+                    ->from($this->db->quoteName('#__ra_events'));
+                $this->titles = $this->db->setQuery($q)->loadAssocList('id', 'title');
+            } catch (\Throwable $e) {
+                $this->titles = [];
+            }
+        }
+        // "35-whitby-weekend": the number finds the event, the words are for people and search engines
+        $slug = OutputFilter::stringURLSafe((string) ($this->titles[$id] ?? ''));
+        return array($id => $slug === '' ? (string) $id : $id . '-' . $slug);
+    }
+
+    /**
+     * Keep the list an event was opened from. Joomla otherwise files every event under the first events menu item
+     * (e.g. a coach trip under Weekends Away), and its Back link then goes to the wrong list.
+     *
+     * @param   array  $query  An associative array of URL arguments
+     *
+     * @return  array  The URL arguments to use to assemble the subsequent URL.
+     */
+    public function preprocess($query) {
+        $keep = 0;
+        if (isset($query['Itemid']) && ($query['view'] ?? '') === 'event') {
+            $item = $this->menu->getItem($query['Itemid']);
+            if ($item && $item->component === 'com_ra_events' && ($item->query['view'] ?? '') === 'events') {
+                $keep = (int) $query['Itemid'];
+            }
+        }
+        $query = parent::preprocess($query);
+        if ($keep) {
+            $query['Itemid'] = $keep;
+        }
+        return $query;
+    }
+
+    /**
+     * Leave out query values the menu item already holds (event_type_id), so a menu item's address has no query string
+     *
+     * @param   array  &$query  The vars that should be converted
+     *
+     * @return  array  The URL arguments to use to assemble the subsequent URL.
+     */
+    public function build(&$query) {
+        if (isset($query['Itemid'], $query['event_type_id'])) {
+            $item = $this->menu->getItem($query['Itemid']);
+            if ($item && isset($item->query['event_type_id'])
+                && (string) $item->query['event_type_id'] === (string) $query['event_type_id']
+                && ($query['view'] ?? ($item->query['view'] ?? '')) === ($item->query['view'] ?? '')) {
+                unset($query['event_type_id']);
+            }
+        }
+        return parent::build($query);
     }
 
     /**
@@ -96,7 +166,7 @@ class Router extends RouterView {
      * @return  array|string  The segments of this item
      */
     public function getEventformSegment($id, $query) {
-        return $this->getEventSegment($id, $query);
+        return array((int) $id => (string) (int) $id);
     }
 
     /**

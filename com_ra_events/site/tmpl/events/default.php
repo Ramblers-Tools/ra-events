@@ -144,7 +144,7 @@ $next_id = $toolsHelper->getValue($sql);
                     }
                     if ($item->contact_id > 0) {
                         echo '<b>Contact</b> ' . $this->lookupContact($item->contact_id);
-                        echo $toolsHelper->buildLink($target_email . $item->id, '<span class="icon-envelope" aria-hidden="true"></span>', True);
+                        echo str_replace("<a ", "<a rel=\"nofollow\" ", $toolsHelper->buildLink($target_email . $item->id, '<span class="icon-envelope" aria-hidden="true"></span>', True));   // a form, not a page for search engines
                         echo '<br>';
                     }
                     $details = strip_tags($item->full_details);
