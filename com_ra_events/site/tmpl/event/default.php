@@ -157,7 +157,7 @@ if ($this->event_type_id == 1) {
     if ($this->item->contact_id > 0) {
         echo '<b>Contact</b> ' . $contact;
      // echo $this->toolsHelper->buildLink($target_email . $this->item->id, ToolsHelper::envelopeIcon,false);  (after tools 3.5.7)
-        echo $this->toolsHelper->buildLink($target_email . $this->item->id, '<span class="icon-envelope" aria-hidden="true"></span>', false);
+        echo str_replace("<a ", "<a rel=\"nofollow\" ", $this->toolsHelper->buildLink($target_email . $this->item->id, '<span class="icon-envelope" aria-hidden="true"></span>', false));   // a form, not a page for search engines
         echo '<br>';
     }
     echo '<h4>Details</h4>';

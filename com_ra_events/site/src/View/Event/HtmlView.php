@@ -19,6 +19,8 @@ defined('_JEXEC') or die;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use \Joomla\CMS\Factory;
 use \Joomla\CMS\Language\Text;
+use Joomla\CMS\Router\Route;
+use Joomla\CMS\Uri\Uri;
 use \Joomla\CMS\User\CurrentUserInterface;
 use Ramblers\Component\Ra_events\Site\Helpers\BookingHelper;
 use Ramblers\Component\Ra_events\Site\Helpers\EventsHelper;
@@ -105,6 +107,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
             }
         }
 
+        $this->redirectToOwnAddress();
         $this->_prepareDocument();
         parent::display($tpl);
     }
@@ -154,6 +157,72 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         if ($this->params->get('robots')) {
             $this->document->setMetadata('robots', $this->params->get('robots'));
         }
+
+        // One address for search engines, whichever list or ?mode= the visitor came by
+        $canonical = $this->canonicalAddress();
+        if ($canonical !== '') {
+            $this->document->addHeadLink(htmlspecialchars($canonical, ENT_QUOTES, 'UTF-8'), 'canonical');
+        }
+    }
+
+    /**
+     * The event's address under the menu item for its type (else the Diary, else the current one), with no query
+     *
+     * @return string  Full URL, or '' when there is no event
+     */
+    public function canonicalAddress(): string {
+        if (empty($this->item->id)) {
+            return '';
+        }
+        $itemId = (int) $this->menu_id;
+        $layout = (string) $this->layout;
+        $byType = 0;
+        $diary = 0;
+        $layouts = [];
+        foreach (Factory::getApplication()->getMenu()->getItems('component', 'com_ra_events') as $m) {
+            if (($m->query['view'] ?? '') !== 'events') {
+                continue;
+            }
+            $layouts[(int) $m->id] = (string) ($m->query['layout'] ?? '');
+            $type = (int) ($m->query['event_type_id'] ?? 0);
+            if (!$byType && $type > 0 && $type === (int) $this->event_type_id) {
+                $byType = (int) $m->id;
+            }
+            if (!$diary && ($m->query['layout'] ?? '') === 'all') {
+                $diary = (int) $m->id;
+            }
+        }
+        if ($byType || $diary) {
+            $itemId = $byType ?: $diary;
+            $layout = $layouts[$itemId];
+        }
+        // The list's layout (all, committee) is what matches the menu item when the address is built
+        return Route::_('index.php?option=com_ra_events&view=event&Itemid=' . $itemId
+            . ($layout !== '' ? '&layout=' . rawurlencode($layout) : '') . '&id=' . (int) $this->item->id,
+            false, Route::TLS_IGNORE, true);
+    }
+
+    /**
+     * Old addresses had only the number (/calendar/35.html): send them on to /calendar/35-title.html, keeping any query
+     */
+    private function redirectToOwnAddress(): void {
+        $app = Factory::getApplication();
+        if (empty($this->item->id) || !$app->get('sef') || $app->input->getMethod() !== 'GET'
+            || $app->input->getCmd('format', 'html') !== 'html') {
+            return;
+        }
+        $uri = Uri::getInstance();
+        $have = preg_replace('/\.[a-z]+$/', '', basename($uri->getPath()));
+        if ((int) $have !== (int) $this->item->id) {
+            return;   // not an event address we built (e.g. index.php?option=...)
+        }
+        $want = Route::_('index.php?option=com_ra_events&view=event&Itemid=' . (int) $this->menu_id
+            . ($this->layout ? '&layout=' . rawurlencode((string) $this->layout) : '') . '&id=' . (int) $this->item->id, false);
+        if (preg_replace('/\.[a-z]+$/', '', basename(parse_url($want, PHP_URL_PATH))) === $have) {
+            return;
+        }
+        $query = $uri->getQuery();
+        $app->redirect($want . ($query !== '' ? (str_contains($want, '?') ? '&' : '?') . $query : ''), 301);
     }
 
     public function showButtons(){
@@ -165,7 +234,7 @@ class HtmlView extends BaseHtmlView implements CurrentUserInterface {
         } else {
             $back .= '&layout=' . $this->layout;
         }
-        $buttons = $this->toolsHelper->backButton($back, $caption);
+        $buttons = $this->toolsHelper->backButton(Route::_($back));
 
         // Only the event's own organiser (or a user with core.edit) may edit it
         $eventsHelper = new EventsHelper;
